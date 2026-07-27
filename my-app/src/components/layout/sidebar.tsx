@@ -224,7 +224,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       {/* Footer */}
       <div className="p-4">
         <button
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-800 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-800 transition-colors hover:bg-primary-700 hover:text-sidebar-accent-foreground"
           aria-label="Sair do sistema"
         >
           <LogOut className="size-4 shrink-0 " />
