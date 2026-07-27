@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { UserRole } from "@/types";
 import { useState } from "react";
+import Image from "next/image";
 
 // ── Icon map ──
 const iconMap: Record<string, LucideIcon> = {
@@ -165,24 +166,26 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 px-5">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary-600 text-white font-bold text-sm">
-          QT
-        </div>
-        <span className="text-lg font-light text-white tracking-wide">
-          Quick Transfer
-        </span>
+        <Image
+          src="/assets/images/logo/LogoAndTitle.svg"
+          alt="Logo WEG"
+          width={200}
+          height={36}
+          priority
+        />
       </div>
 
-      <Separator className="bg-sidebar-border" />
+      <Separator className="bg-neutral-200" />
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-6">
           {filteredNav.map((section) => (
             <div key={section.title}>
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
+              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-primary-900">
                 {section.title}
               </p>
+              <Separator className="bg-primary-900 mb-2" />
               <ul className="space-y-1">
                 {section.items.map((item) => {
                   const Icon = iconMap[item.icon] ?? LayoutDashboard;
@@ -198,10 +201,10 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
                         href={item.href}
                         onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors text-primary-800",
                           isActive
                             ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                            : "text-primary-800 hover:bg-primary-700 hover:text-sidebar-accent-foreground"
                         )}
                       >
                         <Icon className="size-4 shrink-0" />
@@ -216,15 +219,15 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      <Separator className="bg-sidebar-border" />
+      <Separator className="bg-neutral-200 flex-col" />
 
       {/* Footer */}
       <div className="p-4">
         <button
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-800 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
           aria-label="Sair do sistema"
         >
-          <LogOut className="size-4 shrink-0" />
+          <LogOut className="size-4 shrink-0 " />
           <span>Sair</span>
         </button>
       </div>
@@ -253,7 +256,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar - desktop: fixed left, mobile: slide-in drawer */}
+      {/* Sidebar - desktop: standard fixed left w-60 */}
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-screen w-60 transition-transform duration-300 ease-in-out",

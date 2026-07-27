@@ -42,7 +42,7 @@ export function Topbar({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card px-6">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card pl-6 pr-[5vw]">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
