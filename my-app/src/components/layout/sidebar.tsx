@@ -27,6 +27,8 @@ import type { UserRole } from "@/types";
 import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from 'next/navigation';
+import { apiFetch, AUTH_COOKIE_NAME } from "@/lib/api";
+import { ROLE_COOKIE_NAME } from "@/lib/auth";
 
 // ── Icon map ──
 const iconMap: Record<string, LucideIcon> = {
@@ -154,6 +156,31 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const router = useRouter();
+  const [saindo, setSaindo] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      setSaindo(true);
+
+      // Limpa os cookies locais (suporta o modo mock / fallback de teste)
+      document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+
+      // Requisição POST para o endpoint de logout do backend Spring Boot enviando credentials: "include"
+      await apiFetch("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch (error) {
+      // Ignora erros de rede no logout para garantir o redirecionamento
+      console.warn("Erro ou backend indisponível no logout:", error);
+    } finally {
+      setSaindo(false);
+      // Redireciona o usuário para a rota de login após a invalidação da sessão/cookie
+      router.push("/login");
+    }
+  };
+
   const filteredNav = navigation
     .map((section) => ({
       ...section,
@@ -225,11 +252,13 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       {/* Footer */}
       <div className="p-4">
         <button
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-800 transition-colors hover:bg-primary-700 hover:text-sidebar-accent-foreground"
+          onClick={handleLogout}
+          disabled={saindo}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-primary-800 transition-colors hover:bg-primary-700 hover:text-sidebar-accent-foreground disabled:opacity-50"
           aria-label="Sair do sistema"
         >
           <LogOut className="size-4 shrink-0 " />
-          <span>Sair</span>
+          <span>{saindo ? "Saindo..." : "Sair"}</span>
         </button>
       </div>
     </div>
