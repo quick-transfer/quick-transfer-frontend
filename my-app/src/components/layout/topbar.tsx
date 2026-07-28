@@ -42,7 +42,7 @@ export function Topbar({
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border bg-card pl-6 pr-[5vw]">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between bg-card pl-6 pr-[5vw]">
       {/* Breadcrumb */}
       <Breadcrumb>
         <BreadcrumbList>
@@ -74,33 +74,6 @@ export function Topbar({
           ))}
         </BreadcrumbList>
       </Breadcrumb>
-
-      {/* Right actions */}
-      <div className="flex items-center gap-3">
-        <Tooltip>
-          <TooltipTrigger
-            className="relative inline-flex items-center justify-center size-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            aria-label="Notificações"
-          >
-            <Bell className="size-4" />
-            {/* Notification dot */}
-            <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" />
-          </TooltipTrigger>
-          <TooltipContent>Notificações</TooltipContent>
-        </Tooltip>
-
-        <div className="flex items-center gap-2">
-          <Avatar className="size-8">
-            {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
-            <AvatarFallback className="bg-primary-600 text-white text-xs font-semibold">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <span className="hidden text-sm font-medium text-foreground sm:inline-block">
-            {userName}
-          </span>
-        </div>
-      </div>
     </header>
   );
 }
