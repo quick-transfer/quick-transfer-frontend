@@ -12,7 +12,7 @@ interface AppShellProps {
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
   return (
     <TooltipProvider delay={300}>
-      <div className="min-h-screen bg-background relative overflow-x-hidden">
+      <div className="min-h-screen bg-white relative overflow-x-hidden">
         <Sidebar />
         <div className="lg:pl-60 flex min-h-screen flex-col">
           <Topbar breadcrumbs={breadcrumbs} userName="Admin" />
