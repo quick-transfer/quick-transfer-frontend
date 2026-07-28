@@ -26,6 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import type { UserRole } from "@/types";
 import { useState } from "react";
 import Image from "next/image";
+import { useRouter } from 'next/navigation';
 
 // ── Icon map ──
 const iconMap: Record<string, LucideIcon> = {

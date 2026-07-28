@@ -1,131 +1,122 @@
-"use client";
+"use client"
 
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
-export default function LoginPage() {
-  const router = useRouter();
+import "@/app/globals.css"
+import { useState, FormEvent } from "react"
+import Image from "next/image"
+import { Input } from "@/components/ui/input"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push("/dashboard");
-  };
+export default function Login() {
+    const router = useRouter()
 
-  return (
-    <main className="flex min-h-screen font-sans">
-      {/* Visual Image Section */}
-      <section className="relative hidden w-3/5 lg:block">
-        <Image
-          src="/assets/images/login/login-imagem.png"
-          alt="Ambiente industrial WEG Quick Transfer"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-primary-900/40 backdrop-blur-[1px]" />
-      </section>
+    const [usuario, setUsuario] = useState("")
+    const [senha, setSenha] = useState("")
+    const [carregando, setCarregando] = useState(false)
+    const [erro, setErro] = useState("")
 
-      {/* Form Section */}
-      <section className="flex flex-1 flex-col items-center justify-center bg-primary-600 px-6 py-12">
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-white text-primary-600 font-bold text-xl shadow-md">
-            QT
-          </div>
-          <div className="h-10 w-0.5 bg-white/40" />
-          <span className="text-3xl font-light text-white tracking-wide sm:text-4xl">
-            Quick Transfer
-          </span>
-        </div>
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault()
+        setErro("")
+        setCarregando(true)
 
-        <div className="w-full max-w-md rounded-2xl bg-card p-8 shadow-2xl border border-border">
-          <h1 className="text-center text-2xl font-semibold text-foreground">
-            Login
-          </h1>
-          <div className="mx-auto mt-3 mb-6 h-0.5 w-20 bg-primary-200" />
+        // Simulação de login mockado enquanto a API real não fica pronta
+        setTimeout(() => {
+            setCarregando(false)
+            
+            // Aceita qualquer usuário e senha preenchidos, ou validações específicas
+            if (usuario.trim() && senha.trim()) {
+                // Salva um token mockado no localStorage
+                localStorage.setItem("authToken", "mock-token-quick-transfer-12345")
+                localStorage.setItem("user", JSON.stringify({ name: usuario }))
+                
+                // Redireciona para a página principal / dashboard
+                router.push("/")
+            } else {
+                setErro("Por favor, preencha o usuário e a senha.")
+            }
+        }, 800)
+    }
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium text-foreground">
-                Usuário
-              </Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Digite seu usuário ou crachá"
-                required
-                className="h-11 bg-primary-50/50 border-input focus:bg-white"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Senha
-                </Label>
-                <Link
-                  href="#"
-                  className="text-xs text-primary-600 hover:text-primary-700 hover:underline"
-                >
-                  Esqueceu a senha?
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                required
-                className="h-11 bg-primary-50/50 border-input focus:bg-white"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="h-11 w-full bg-primary-600 text-base font-medium text-white hover:bg-primary-700 shadow-md"
-            >
-              Entrar
-            </Button>
-
-            <div className="flex items-center gap-3 py-2">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs uppercase text-muted-foreground font-medium">
-                ou
-              </span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              className="h-11 w-full gap-2 border-border hover:bg-muted"
-              onClick={() => router.push("/dashboard")}
-            >
-              <svg className="size-5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
+    return (
+        <main className="flex h-screen font-sans">
+            <section className="relative hidden h-screen lg:block lg:w-3/5">
+                <Image
+                    src="/assets/images/login/login-imagem.png"
+                    alt=""
+                    fill
+                    priority
+                    className="object-cover"
                 />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.28v3.15C3.32 21.36 7.37 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.28C.46 8.2.0 10.05.0 12s.46 3.8 1.28 5.42l4-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.37 0 3.32 2.64 1.28 6.58l4 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>Entrar com Google</span>
-            </Button>
-          </form>
-        </div>
-      </section>
-    </main>
-  );
+
+                <div className="absolute inset-0 bg-black/35"></div>
+            </section>
+
+            <section className="flex flex-1 flex-col items-center justify-center bg-primary-800 px-6">
+                <div className="mb-10 flex items-center gap-3">
+                    <Image
+                        src="/assets/images/logo/LogoETitulo (1).svg"
+                        alt="Logo Weg"
+                        width={350}
+                        height={47}
+                    />
+                </div>
+
+                <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
+                    <h2 className="text-center text-[32px] font-semibold text-card-foreground">Login</h2>
+
+                    <div className="mx-auto mt-3 mb-6 h-0.5 w-28 bg-neutral-200"></div>
+
+                    {erro && (
+                        <div className="mb-4 rounded-lg bg-status-danger p-3 text-center text-sm font-medium text-status-danger-foreground border border-status-danger-foreground/20">
+                            {erro}
+                        </div>
+                    )}
+
+                    <form className="space-y-5" onSubmit={handleSubmit}>
+
+                        <div className="mb-8">
+                            <label className="mb-2 block text-[20px] text-foreground font-medium">Usuário</label>
+                            <Input
+                                type="text"
+                                placeholder="Usuário"
+                                value={usuario}
+                                onChange={(e) => setUsuario(e.target.value)}
+                                required
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-3 outline-none transition focus:border-primary-800 focus:bg-accent"
+                            />
+                        </div>
+
+                        <div className="mb-8">
+                            <label className="mb-2 block text-[20px] text-foreground font-medium">
+                                Senha
+                            </label>
+
+                            <Input
+                                type="password"
+                                placeholder="Senha"
+                                value={senha}
+                                onChange={(e) => setSenha(e.target.value)}
+                                required
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-3 outline-none transition focus:border-primary-800 focus:bg-accent"
+                            />
+
+                            <button type="button" className="mt-2 text-[16px] text-neutral-400 hover:text-primary-600 underline ml-1">
+                                <Link href={"#"}>Esqueceu a senha?</Link>
+                            </button>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={carregando}
+                            className="w-full text-[20px] font-medium rounded-xl bg-primary-800 py-2.5 text-primary-foreground transition hover:bg-primary-900 disabled:opacity-50"
+                        >
+                            {carregando ? "Entrando..." : "Entrar"}
+                        </button>
+                    </form>
+                </div>
+            </section>
+        </main >
+    )
 }
