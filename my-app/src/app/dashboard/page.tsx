@@ -74,54 +74,56 @@ export default function DashboardPage() {
           actions={
             <Link
               href="/classes/new"
-              className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700")}
+              className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 p-5 text-[16px]")}
             >
               Nova Turma
             </Link>
           }
         />
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <StatCard
-            label="Total de Turnos Ativos"
-            value={mockShifts.length}
-            icon={Clock}
-          />
-          <StatCard
-            label="Alunos Matriculados"
-            value={totalStudents}
-            icon={Users}
-          />
-          <StatCard
-            label="Solicitações Pendentes"
-            value={pendingRequests}
-            icon={FileText}
-            trend={{ value: "Requer atenção", positive: false }}
-          />
-        </div>
-
-        {/* Active Shifts Table */}
-        <div className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Turnos Ativos</h2>
-              <p className="text-sm text-muted-foreground">Ocupação em tempo real nas unidades fabris</p>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Active Shifts Table */}
+          <div className="space-y-4 rounded-xl bg-card p-6 shadow-[0_5px_7px_4px_rgba(0,0,0,0.2)] lg:col-span-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-[20px] font-semibold text-foreground">Turnos Ativos</h2>
+                <p className="text-sm text-muted-foreground">Ocupação em tempo real nas unidades fabris</p>
+              </div>
+              <Link
+                href="/shifts"
+                className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
+              >
+                Ver todos <ArrowUpRight className="size-4" />
+              </Link>
             </div>
-            <Link
-              href="/shifts"
-              className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
-            >
-              Ver todos <ArrowUpRight className="size-4" />
-            </Link>
-          </div>
 
-          <DataTable
-            columns={shiftColumns}
-            data={mockShifts}
-            pageSize={5}
-            getRowKey={(row) => row.id}
-          />
+            <DataTable
+              columns={shiftColumns}
+              data={mockShifts}
+              pageSize={5}
+              getRowKey={(row) => row.id}
+            />
+
+          </div>
+          {/* Stats Grid */}
+          <div className="flex flex-col gap-4">
+            <StatCard
+              label="Total de Turnos Ativos"
+              value={mockShifts.length}
+              icon={Clock}
+            />
+            <StatCard
+              label="Alunos Matriculados"
+              value={totalStudents}
+              icon={Users}
+            />
+            <StatCard
+              label="Solicitações Pendentes"
+              value={pendingRequests}
+              icon={FileText}
+              trend={{ value: "Requer atenção", positive: false }}
+            />
+          </div>
         </div>
       </div>
     </AppShell>
