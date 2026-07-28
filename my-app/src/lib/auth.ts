@@ -1,17 +1,17 @@
 import { UserRole } from "@/types";
 
 /**
- * Nome do cookie de autenticação JWT/sessão principal.
+ * Authentication JWT session cookie name.
  */
 export const AUTH_COOKIE_NAME = "authToken";
 
 /**
- * Nome do cookie de role do usuário.
+ * User role cookie name.
  */
 export const ROLE_COOKIE_NAME = "userRole";
 
 /**
- * Retorna a rota inicial padrão permitida para cada perfil (RBAC).
+ * Returns default initial route by role (RBAC).
  */
 export function getRedirectPathByRole(role?: UserRole | string | null): string {
   if (!role) return "/dashboard";
@@ -26,40 +26,40 @@ export function getRedirectPathByRole(role?: UserRole | string | null): string {
       return "/dashboard";
     case "MANAGER":
     case "GESTOR":
-      return "/gestor/vagas";
+      return "/manager/vacancies";
     case "STUDENT":
     case "ALUNO":
-      return "/aluno/entrevistas";
+      return "/student/interviews";
     default:
       return "/dashboard";
   }
 }
 
 /**
- * Define se uma rota é permitida para uma determinada role.
+ * Determines whether a route is permitted for a specific user role.
  */
 export function isRouteAllowedForRole(pathname: string, role?: UserRole | string | null): boolean {
   if (!role) return true;
 
   const normalizedRole = role.toUpperCase();
 
-  // Rotas exclusivas de ADMIN
+  // ADMIN exclusive routes
   if (pathname.startsWith("/admin")) {
     return normalizedRole === "ADMIN";
   }
 
-  // Rotas de GESTOR
-  if (pathname.startsWith("/gestor")) {
+  // MANAGER routes
+  if (pathname.startsWith("/manager")) {
     return normalizedRole === "MANAGER" || normalizedRole === "GESTOR" || normalizedRole === "ADMIN";
   }
 
-  // Rotas de ALUNO
-  if (pathname.startsWith("/aluno")) {
+  // STUDENT routes
+  if (pathname.startsWith("/student")) {
     return normalizedRole === "STUDENT" || normalizedRole === "ALUNO" || normalizedRole === "ADMIN";
   }
 
-  // Rotas de Coordenador (/dashboard, /turnos, /turmas, /alunos, /solicitacoes)
-  const coordinatorRoutes = ["/dashboard", "/turnos", "/turmas", "/alunos", "/solicitacoes"];
+  // Coordinator routes (/dashboard, /shifts, /classes, /students, /requests)
+  const coordinatorRoutes = ["/dashboard", "/shifts", "/classes", "/students", "/requests"];
   if (coordinatorRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
     return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR" || normalizedRole === "ADMIN";
   }
