@@ -56,7 +56,7 @@ export default function DashboardPage() {
       className: "text-right",
       render: (shift) => (
         <Link
-          href={`/turnos?id=${shift.id}`}
+          href={`/shifts?id=${shift.id}`}
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           Detalhes
@@ -73,7 +73,7 @@ export default function DashboardPage() {
           description="Visão geral da ocupação de turnos, turmas ativas e solicitações pendentes"
           actions={
             <Link
-              href="/turmas/nova"
+              href="/classes/new"
               className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700")}
             >
               Nova Turma
@@ -109,7 +109,7 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground">Ocupação em tempo real nas unidades fabris</p>
             </div>
             <Link
-              href="/turnos"
+              href="/shifts"
               className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
             >
               Ver todos <ArrowUpRight className="size-4" />
