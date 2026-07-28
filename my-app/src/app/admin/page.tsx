@@ -11,10 +11,10 @@ import { cn } from "@/lib/utils";
 
 export default function AdminPage() {
   const adminModules = [
-    { title: "Usuários", href: "/admin/usuarios", count: `${mockUsers.length} usuários`, icon: Users, color: "bg-blue-500/10 text-blue-600" },
-    { title: "Locais Fabris", href: "/admin/locais", count: `${mockPlaces.length} unidades`, icon: MapPin, color: "bg-green-500/10 text-green-600" },
-    { title: "Cursos Técnicos", href: "/admin/cursos", count: `${mockCourses.length} cursos`, icon: BookOpen, color: "bg-purple-500/10 text-purple-600" },
-    { title: "Vagas Abertas", href: "/admin/vagas", count: `${mockVacancies.length} vagas`, icon: Briefcase, color: "bg-amber-500/10 text-amber-600" },
+    { title: "Usuários", href: "/admin/users", count: `${mockUsers.length} usuários`, icon: Users, color: "bg-blue-500/10 text-blue-600" },
+    { title: "Locais Fabris", href: "/admin/locations", count: `${mockPlaces.length} unidades`, icon: MapPin, color: "bg-green-500/10 text-green-600" },
+    { title: "Cursos Técnicos", href: "/admin/courses", count: `${mockCourses.length} cursos`, icon: BookOpen, color: "bg-purple-500/10 text-purple-600" },
+    { title: "Vagas Abertas", href: "/admin/vacancies", count: `${mockVacancies.length} vagas`, icon: Briefcase, color: "bg-amber-500/10 text-amber-600" },
   ];
 
   return (
