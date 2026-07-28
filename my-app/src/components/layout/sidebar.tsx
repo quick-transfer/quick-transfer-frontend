@@ -195,7 +195,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 px-5">
         <Image
-          src="/assets/images/logo/LogoAndTitle.svg"
+          src="/assets/images/logo/logo-title-blue.svg"
           alt="Logo WEG"
           width={200}
           height={36}
