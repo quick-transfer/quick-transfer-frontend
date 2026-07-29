@@ -143,14 +143,14 @@ export function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg shadow-[0_5px_7px_4px_rgba(0,0,0,0.2)] overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="bg-neutral-100 hover:bg-neutral-100">
               {columns.map((col) => (
                 <TableHead
+                  className={cn("text-xs font-semibold tracking-wider text-primary-700", col.className)}
                   key={col.key}
-                  className={cn("text-xs font-semibold uppercase tracking-wider text-muted-foreground", col.className)}
                 >
                   {col.sortable ? (
                     <button
@@ -160,7 +160,6 @@ export function DataTable<T extends Record<string, any>>({
                       aria-label={`Ordenar por ${col.header}`}
                     >
                       {col.header}
-                      {getSortIcon(col.key)}
                     </button>
                   ) : (
                     col.header

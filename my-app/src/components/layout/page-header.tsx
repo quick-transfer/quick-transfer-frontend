@@ -22,7 +22,7 @@ export function PageHeader({
       )}
     >
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-[26px] font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (
