@@ -149,7 +149,7 @@ export function DataTable<T extends Record<string, any>>({
             <TableRow className="bg-neutral-100 hover:bg-neutral-100">
               {columns.map((col) => (
                 <TableHead
-                  className={cn("text-xs font-semibold tracking-wider text-primary-700", col.className)}
+                  className={cn("text-xs font-semibold tracking-wider text-primary-700 px-6", col.className)}
                   key={col.key}
                 >
                   {col.sortable ? (
@@ -188,7 +188,8 @@ export function DataTable<T extends Record<string, any>>({
                     <TableCell key={col.key} className={col.className}>
                       {col.render
                         ? col.render(row)
-                        : ((row as Record<string, unknown>)[col.key] as React.ReactNode) ?? "—"}
+                        : ((row as Record<string, unknown>)[col.key] as React.ReactNode) ?? "—"
+                        }
                     </TableCell>
                   ))}
                 </TableRow>
