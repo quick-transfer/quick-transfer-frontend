@@ -165,8 +165,17 @@ const navigation: SidebarNavSection[] = [
   },
 ];
 
+function normalizeRole(roleStr?: UserRole | string | null): UserRole {
+  if (!roleStr) return "ADMIN";
+  const upper = roleStr.toUpperCase();
+  if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
+  if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
+  if (upper === "STUDENT" || upper === "ALUNO") return "STUDENT";
+  return "ADMIN";
+}
+
 interface SidebarProps {
-  currentRole?: UserRole;
+  currentRole?: UserRole | string;
 }
 
 export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
@@ -198,11 +207,13 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
     }
   };
 
+  const activeRole = normalizeRole(currentRole);
+
   const filteredNav = navigation
     .map((section) => ({
       ...section,
       items: section.items.filter((item) =>
-        item.roles.includes(currentRole)
+        item.roles.includes(activeRole)
       ),
     }))
     .filter((section) => section.items.length > 0);

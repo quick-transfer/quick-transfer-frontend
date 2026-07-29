@@ -5,11 +5,21 @@ import { Topbar, type BreadcrumbSegment } from "@/components/layout/topbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 import type { UserRole } from "@/types";
+import { useEffect, useState } from "react";
+
+function normalizeRole(roleStr?: string | null): UserRole {
+  if (!roleStr) return "ADMIN";
+  const upper = roleStr.toUpperCase();
+  if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
+  if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
+  if (upper === "STUDENT" || upper === "ALUNO") return "STUDENT";
+  return "ADMIN";
+}
 
 function getRoleFromCookie(): UserRole {
   if (typeof document === "undefined") return "ADMIN";
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${ROLE_COOKIE_NAME}=([^;]*)`));
-  return (match?.[1] as UserRole) || "ADMIN";
+  return normalizeRole(match?.[1]);
 }
 
 interface AppShellProps {
@@ -18,7 +28,11 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
-  const role = getRoleFromCookie();
+  const [role, setRole] = useState<UserRole>("ADMIN");
+
+  useEffect(() => {
+    setRole(getRoleFromCookie());
+  }, []);
 
   const roleLabels: Record<UserRole, string> = {
     ADMIN: "Administrador",
@@ -30,7 +44,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
   return (
     <TooltipProvider delay={300}>
       <div className="min-h-screen bg-white relative overflow-x-hidden">
-        <Sidebar />
+        <Sidebar currentRole={role} />
         <div className="lg:pl-60 flex min-h-screen flex-col">
           <Topbar breadcrumbs={breadcrumbs} userName={roleLabels[role] || "Usuário"} />
           <main className="flex-1 p-6 pr-[5vw]">{children}</main>
@@ -39,3 +53,4 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
     </TooltipProvider>
   );
 }
+
