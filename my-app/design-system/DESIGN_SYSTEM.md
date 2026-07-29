@@ -1,6 +1,7 @@
 # Quick Transfer — Design System Audit
 
-> Documento atualizado com os valores exatos do Figma/design spec.
+> Documento gerado a partir da análise das 4 imagens de protótipo.
+> Todos os valores hex são aproximações extraídas visualmente dos protótipos.
 
 ---
 
@@ -10,77 +11,60 @@
 
 Cor dominante usada na sidebar, background do login, botões primários e cabeçalhos.
 
-| Token            | Hex         | Uso principal                                        |
-|------------------|-------------|------------------------------------------------------|
-| `primary-50`     | `#ECF1FF`   | Background da sidebar, áreas sutis                   |
-| `primary-100`    | `#D5E3FF`   | Hover leve, background de seleção                    |
-| `primary-200`    | `#A7C8FF`   | Bordas de botões primários, divisores claros         |
-| `primary-300`    | `#89ACE7`   | Borda do botão de login, ícones inativos             |
-| `primary-400`    | `#6E92CA`   | Links hover, ícones secundários                      |
-| `primary-500`    | `#5478AF`   | Links ativos, ícones de ação                         |
-| `primary-600`    | `#3A5F94`   | Botões secundários, estados ativos                   |
-| `primary-700`    | `#1F477B`   | Hover de botões primários                            |
-| `primary-800`    | `#003061`   | Botões primários, sidebar ativa                      |
-| `primary-900`    | `#001E40`   | Background do botão da sidebar, sidebar background   |
-| `primary-950`    | `#000000`   | Background mais profundo                             |
+| Token            | Hex       | Uso principal                                    |
+|------------------|-----------|--------------------------------------------------|
+| `primary-50`     | `#EFF6FF` | Background sutil de inputs em foco               |
+| `primary-100`    | `#DBEAFE` | Hover leve, background de seleção                |
+| `primary-200`    | `#B3D4F7` | Bordas de botões primários, divisores claros      |
+| `primary-300`    | `#80AED2` | Borda do botão de login, ícones inativos          |
+| `primary-400`    | `#4A8DC4` | Links hover, ícones secundários                   |
+| `primary-500`    | `#1E6DB5` | Links ativos, ícones de ação                      |
+| `primary-600`    | `#005DAA` | Botões primários, background do login, sidebar ativa |
+| `primary-700`    | `#004C92` | Hover de botões primários                         |
+| `primary-800`    | `#0A2E5C` | Sidebar background (tom mais escuro)              |
+| `primary-900`    | `#0D1B3E` | Sidebar background principal (mais escuro ainda)  |
+| `primary-950`    | `#091428` | Background mais profundo da sidebar               |
 
-### 1.2 Secondary (Cyan / Teal)
+### 1.2 Secondary (Azul-Acinzentado / Slate Blue)
 
-Usado em elementos de suporte, backgrounds secundários e destaques informativos.
+Usado em elementos de suporte, backgrounds secundários e textos de ênfase moderada.
 
-| Token              | Hex         | Uso principal                                |
-|--------------------|-------------|----------------------------------------------|
-| `secondary-50`     | `#E3F3FF`   | Background de áreas de conteúdo              |
-| `secondary-100`    | `#C4E7FF`   | Bordas de tabelas, separadores               |
-| `secondary-200`    | `#7BD0FF`   | Bordas de inputs, estados leves              |
-| `secondary-300`    | `#2DB7F2`   | Ícones informativos, destaques               |
-| `secondary-400`    | `#009BD1`   | Links secundários, ações informativas        |
-| `secondary-500`    | `#0080AD`   | Botões secundários, texto de ênfase          |
-| `secondary-600`    | `#00668A`   | Hover de botões secundários                  |
-| `secondary-700`    | `#004C69`   | Texto de cabeçalhos de tabela                |
-| `secondary-800`    | `#00354A`   | Textos de alta ênfase secundária             |
-| `secondary-900`    | `#001E2C`   | Texto principal de alta ênfase               |
-
-### 1.2b Tertiary (Azul-Acinzentado / Blue-Gray)
-
-Usado em textos de suporte, ícones desabilitados e áreas neutras com tom azulado.
-
-| Token              | Hex         | Uso principal                                |
-|--------------------|-------------|----------------------------------------------|
-| `tertiary-50`      | `#E9F1FF`   | Background de áreas de conteúdo leve         |
-| `tertiary-100`     | `#D4E4FA`   | Bordas sutis, separadores leves              |
-| `tertiary-200`     | `#B9C8DE`   | Bordas de inputs inativos                    |
-| `tertiary-300`     | `#9DACC2`   | Texto placeholder, ícones desabilitados      |
-| `tertiary-400`     | `#8392A6`   | Texto secundário, labels de forms            |
-| `tertiary-500`     | `#69788C`   | Texto de corpo secundário                    |
-| `tertiary-600`     | `#516072`   | Texto de cabeçalhos de tabela                |
-| `tertiary-700`     | `#39485A`   | Texto de ênfase                              |
-| `tertiary-800`     | `#233143`   | Sidebar sections                             |
-| `tertiary-900`     | `#0D1C2D`   | Texto principal de alta ênfase               |
+| Token              | Hex       | Uso principal                                |
+|--------------------|-----------|----------------------------------------------|
+| `secondary-50`     | `#F0F4F8` | Background de áreas de conteúdo              |
+| `secondary-100`    | `#E2E8F0` | Bordas de tabelas, separadores               |
+| `secondary-200`    | `#CBD5E1` | Bordas de inputs inativos                    |
+| `secondary-300`    | `#94A3B8` | Texto placeholder, ícones desabilitados      |
+| `secondary-400`    | `#64748B` | Texto secundário, labels de forms            |
+| `secondary-500`    | `#475569` | Texto de corpo secundário                    |
+| `secondary-600`    | `#334155` | Texto de cabeçalhos de tabela                |
+| `secondary-700`    | `#1E293B` | Texto de ênfase                              |
+| `secondary-800`    | `#1A2332` | Sidebar sections                             |
+| `secondary-900`    | `#0F172A` | Texto principal de alta ênfase               |
 
 ### 1.3 Neutros (Escala de Cinzas)
 
 Aplicados em backgrounds, bordas, textos de corpo e elementos de UI neutra.
 
-| Token            | Hex         | Uso principal                                   |
-|------------------|-------------|-------------------------------------------------|
-| `neutral-50`     | `#EFF1F3`   | Background da página principal                  |
-| `neutral-100`    | `#E0E3E5`   | Background de cards, campos de formulário       |
-| `neutral-200`    | `#C4C7C9`   | Bordas sutis, separadores de linhas de tabela   |
-| `neutral-300`    | `#A9ABAD`   | Bordas de inputs, divisores                     |
-| `neutral-400`    | `#8E9193`   | Texto placeholder, ícones inativos              |
-| `neutral-500`    | `#747779`   | Texto de apoio, labels                          |
-| `neutral-600`    | `#5C5F61`   | Texto de corpo                                  |
-| `neutral-700`    | `#444749`   | Texto de ênfase secundária                      |
-| `neutral-800`    | `#2D3133`   | Títulos e headings                              |
-| `neutral-900`    | `#191C1E`   | Texto de máxima ênfase                          |
+| Token            | Hex       | Uso principal                                  |
+|------------------|-----------|-------------------------------------------------|
+| `neutral-50`     | `#FAFBFC` | Background da página principal                  |
+| `neutral-100`    | `#F5F6F8` | Background de cards, campos de formulário        |
+| `neutral-200`    | `#E8EAED` | Bordas sutis, separadores de linhas de tabela    |
+| `neutral-300`    | `#D1D5DB` | Bordas de inputs, divisores                      |
+| `neutral-400`    | `#9CA3AF` | Texto placeholder, ícones inativos               |
+| `neutral-500`    | `#6B7280` | Texto de apoio, labels                           |
+| `neutral-600`    | `#4B5563` | Texto de corpo                                   |
+| `neutral-700`    | `#374151` | Texto de ênfase secundária                       |
+| `neutral-800`    | `#1F2937` | Títulos e headings                               |
+| `neutral-900`    | `#111827` | Texto de máxima ênfase                           |
 
 ### 1.4 Accent / Gold-Beige (Escala Dourada)
 
 Aparece na folha de tokens como uma escala separada (tons beige/dourados). Uso provável: destaques especiais, alertas informativos ou variante decorativa.
 
-| Token          | Hex       | Uso principal                               |
-|----------------|-----------|---------------------------------------------|
+| Token          | Hex       | Uso principal                              |
+|----------------|-----------|--------------------------------------------|
 | `accent-50`    | `#FFF8E1` | Background de alertas/informações leves     |
 | `accent-100`   | `#FFECB3` | Background de tags/badges informativos      |
 | `accent-200`   | `#FFE082` | Bordas de destaque                          |
@@ -96,13 +80,13 @@ Aparece na folha de tokens como uma escala separada (tons beige/dourados). Uso p
 
 Observadas nos badges das telas de admin (entrevistas, vagas, cursos, usuários):
 
-| Token             | Hex (bg)  | Hex (text) | Significado visual nos protótipos                     | Exemplos de uso                                    |
-|-------------------|-----------|------------|-------------------------------------------------------|----------------------------------------------------|
+| Token             | Hex (bg)  | Hex (text) | Significado visual nos protótipos                     | Exemplos de uso                              |
+|-------------------|-----------|------------|-------------------------------------------------------|----------------------------------------------|
 | `status-success`  | `#DCFCE7` | `#166534`  | Aprovado, Aberto, Ativo, Concluído                    | Badge "Aprovado" em entrevistas, "Aberto" em vagas |
-| `status-danger`   | `#FEE2E2` | `#991B1B`  | Urgente, Atrasado, Fechado, Reprovado, Inativo        | Badge "Reprovado", "Fechado", "Urgente"            |
-| `status-warning`  | `#FEF3C7` | `#92400E`  | Pendente, Atenção, Em revisão                         | Badge de aviso / pendência                         |
-| `status-info`     | `#DBEAFE` | `#1E40AF`  | Em andamento, Informativo, Em processo                | Badge "Em andamento", "Agendada"                   |
-| `status-neutral`  | `#F3F4F6` | `#4B5563`  | Inativo, Rascunho, Sem status definido                | Badge "Inativo", estados desabilitados             |
+| `status-danger`   | `#FEE2E2` | `#991B1B`  | Urgente, Atrasado, Fechado, Reprovado, Inativo        | Badge "Reprovado", "Fechado", "Urgente"      |
+| `status-warning`  | `#FEF3C7` | `#92400E`  | Pendente, Atenção, Em revisão                         | Badge de aviso / pendência                    |
+| `status-info`     | `#DBEAFE` | `#1E40AF`  | Em andamento, Informativo, Em processo                | Badge "Em andamento", "Agendada"              |
+| `status-neutral`  | `#F3F4F6` | `#4B5563`  | Inativo, Rascunho, Sem status definido                | Badge "Inativo", estados desabilitados        |
 
 > **Nota de acessibilidade:** Todos os badges devem incluir texto descritivo (e idealmente um ícone),
 > nunca dependendo apenas da cor para transmitir significado (WCAG 1.4.1).
@@ -118,17 +102,17 @@ Observadas nos badges das telas de admin (entrevistas, vagas, cursos, usuários)
 Baseada nos exemplos "Aa" da folha de tokens e nos textos das telas:
 
 | Token / Uso               | Tamanho (px) | Tamanho (rem) | Peso     | Line Height | Exemplo no protótipo                          |
-|---------------------------|--------------|---------------|----------|-------------|-----------------------------------------------|
-| `display-lg`              | 44px         | 2.75rem       | 300      | 1.1         | "Quick Transfer" no login                     |
-| `heading-xl`              | 32px         | 2rem          | 600      | 1.25        | "Login" no card                               |
-| `heading-lg`              | 24px         | 1.5rem        | 600      | 1.33        | Títulos de página ("Painel do Coordenador")   |
-| `heading-md`              | 20px         | 1.25rem       | 600      | 1.4         | Títulos de seção, labels de form              |
-| `heading-sm`              | 16px         | 1rem          | 600      | 1.5         | Nomes em cards, cabeçalhos de tabela          |
-| `body-lg`                 | 16px         | 1rem          | 400      | 1.5         | Corpo principal, botões                       |
-| `body-md`                 | 14px         | 0.875rem      | 400      | 1.5         | Texto de tabela, campos de formulário         |
-| `body-sm`                 | 12px         | 0.75rem       | 400      | 1.5         | Captions, labels auxiliares, pagination info  |
-| `body-xs`                 | 10px         | 0.625rem      | 400      | 1.4         | Badges de status (texto pequeno)              |
-| `number-stat`             | 48px         | 3rem          | 700      | 1.0         | Números grandes nos cards de estatística      |
+|---------------------------|-------------|---------------|----------|-------------|-----------------------------------------------|
+| `display-lg`              | 44px        | 2.75rem       | 300      | 1.1         | "Quick Transfer" no login                     |
+| `heading-xl`              | 32px        | 2rem          | 600      | 1.25        | "Login" no card                               |
+| `heading-lg`              | 24px        | 1.5rem        | 600      | 1.33        | Títulos de página ("Painel do Coordenador")   |
+| `heading-md`              | 20px        | 1.25rem       | 600      | 1.4         | Títulos de seção, labels de form              |
+| `heading-sm`              | 16px        | 1rem          | 600      | 1.5         | Nomes em cards, cabeçalhos de tabela          |
+| `body-lg`                 | 16px        | 1rem          | 400      | 1.5         | Corpo principal, botões                       |
+| `body-md`                 | 14px        | 0.875rem      | 400      | 1.5         | Texto de tabela, campos de formulário         |
+| `body-sm`                 | 12px        | 0.75rem       | 400      | 1.5         | Captions, labels auxiliares, pagination info  |
+| `body-xs`                 | 10px        | 0.625rem      | 400      | 1.4         | Badges de status (texto pequeno)              |
+| `number-stat`             | 48px        | 3rem          | 700      | 1.0         | Números grandes nos cards de estatística      |
 
 ---
 
@@ -138,8 +122,8 @@ Baseada nos exemplos "Aa" da folha de tokens e nos textos das telas:
 
 Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 
-| Token   | Valor  | Uso principal                                          |
-|---------|--------|--------------------------------------------------------|
+| Token   | Valor  | Uso principal                                         |
+|---------|--------|-------------------------------------------------------|
 | `sp-1`  | 4px    | Gap mínimo entre ícone e texto inline                  |
 | `sp-2`  | 8px    | Padding interno de badges, gap entre itens de lista    |
 | `sp-3`  | 12px   | Padding de inputs, gap pequeno entre elementos         |
@@ -153,7 +137,7 @@ Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 
 ### 4.2 Raio de Borda (Border Radius)
 
-| Token          | Valor  | Uso                                            |
+| Token          | Valor  | Uso                                           |
 |----------------|--------|------------------------------------------------|
 | `radius-sm`    | 4px    | Badges de status, tags pequenas                |
 | `radius-md`    | 8px    | Inputs, botões, cards de lista                 |
@@ -167,7 +151,7 @@ Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 ## 5. Sombras
 
 | Token          | Valor CSS                                       | Uso                                |
-|----------------|--------------------------------------------------|-----------------------------------|
+|----------------|--------------------------------------------------|------------------------------------|
 | `shadow-sm`    | `0 1px 2px rgba(0,0,0,0.05)`                    | Cards sutis, inputs                |
 | `shadow-md`    | `0 4px 6px -1px rgba(0,0,0,0.1)`                | Cards de conteúdo, dropdowns       |
 | `shadow-lg`    | `0 10px 15px -3px rgba(0,0,0,0.1)`              | Modais, card de login              |
@@ -179,7 +163,7 @@ Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 
 ### 6.1 Sidebar de Navegação + Topbar/Header
 
-- **Sidebar:** Fixa à esquerda, background `primary-900` (#001E40, navy escuro). Contém:
+- **Sidebar:** Fixa à esquerda, background `primary-900` (navy escuro). Contém:
   - Logo "Quick Transfer" no topo (ícone + texto branco)
   - Links de navegação com ícones (Lucide), texto branco/acinzentado
   - Item ativo com destaque (fundo levemente mais claro ou borda lateral)
@@ -194,7 +178,7 @@ Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 ### 6.2 Botão (Button)
 
 Variantes observadas nos protótipos:
-- **Primary:** Background `primary-800` (#003061), texto branco, borda `primary-300` (como no login)
+- **Primary:** Background `primary-600`, texto branco, borda `primary-300` (como no login)
 - **Secondary/Outline:** Background transparente, borda cinza, texto escuro
 - **Destructive/Danger:** Background vermelho (`status-danger`), texto branco — visto em ações de exclusão
 - **Ghost:** Sem background/borda, texto primário — links internos
@@ -299,7 +283,7 @@ Visível em telas de admin (lista de cursos, lista de vagas):
 ## 7. Mapeamento para shadcn/ui
 
 | Componente do protótipo           | Componente shadcn       | Customização necessária                                |
-|-----------------------------------|-------------------------|--------------------------------------------------------|
+|-----------------------------------|-------------------------|-------------------------------------------------------|
 | Botão                             | `button`                | Variantes de cor via CVA (já suportado)                |
 | Input de texto / busca            | `input`                 | Composição com ícone Lucide (search)                   |
 | Tabela                            | `table`                 | Paginação e ordenação manual por cima                  |
@@ -326,7 +310,7 @@ Visível em telas de admin (lista de cursos, lista de vagas):
 
 ## 8. Decisões e Suposições Pendentes
 
-1. **Cores exatas:** ✅ Valores atualizados com as cores exatas do design spec (Primary, Secondary, Tertiary e Neutral).
+1. **Cores exatas:** Os valores hex são aproximações visuais. Se houver um arquivo Figma/sketch com valores exatos, é preferível usá-los.
 2. **Fonte secundária:** Não identifiquei uma segunda família tipográfica nos protótipos. Assumo que Manrope é usada em toda a interface.
 3. **Ícones:** Assumo Lucide React como biblioteca de ícones (padrão shadcn/ui). Confirmar se os ícones nos protótipos são Lucide ou outra biblioteca.
 4. **Sidebar responsiva:** Nos protótipos desktop, a sidebar é fixa. Assumo que em mobile ela se torna um drawer/hamburger menu. Confirmar comportamento desejado.
