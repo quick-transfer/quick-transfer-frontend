@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  Users2,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +44,7 @@ const iconMap: Record<string, LucideIcon> = {
   BookOpen,
   Briefcase,
   ShieldCheck,
+  Users2,
 };
 
 interface SidebarNavItem {
@@ -75,7 +77,7 @@ const navigation: SidebarNavSection[] = [
       },
       {
         label: "Turmas",
-        href: "/classes/new",
+        href: "/classes",
         icon: "GraduationCap",
         roles: ["COORDINATOR", "ADMIN"],
       },
@@ -86,9 +88,15 @@ const navigation: SidebarNavSection[] = [
         roles: ["COORDINATOR", "ADMIN"],
       },
       {
-        label: "Solicitações",
-        href: "/requests",
-        icon: "FileText",
+        label: "Cursos",
+        href: "/courses",
+        icon: "BookOpen",
+        roles: ["COORDINATOR", "ADMIN"],
+      },
+      {
+        label: "Direcionar Alunos",
+        href: "/coordinator/direct",
+        icon: "Users2",
         roles: ["COORDINATOR", "ADMIN"],
       },
     ],
@@ -126,6 +134,12 @@ const navigation: SidebarNavSection[] = [
         roles: ["ADMIN"],
       },
       {
+        label: "Gestores",
+        href: "/admin/sections",
+        icon: "Briefcase",
+        roles: ["ADMIN"],
+      },
+      {
         label: "Locais",
         href: "/admin/locations",
         icon: "MapPin",
@@ -153,12 +167,6 @@ const navigation: SidebarNavSection[] = [
         label: "Vagas",
         href: "/admin/vacancies",
         icon: "Briefcase",
-        roles: ["ADMIN"],
-      },
-      {
-        label: "Configurações",
-        href: "/admin/settings",
-        icon: "Settings",
         roles: ["ADMIN"],
       },
     ],
