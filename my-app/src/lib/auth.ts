@@ -27,9 +27,6 @@ export function getRedirectPathByRole(role?: UserRole | string | null): string {
     case "MANAGER":
     case "GESTOR":
       return "/manager/vacancies";
-    case "STUDENT":
-    case "ALUNO":
-      return "/student/interviews";
     default:
       return "/dashboard";
   }
@@ -43,26 +40,25 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
 
   const normalizedRole = role.toUpperCase();
 
+  // ADMIN has access to everything
+  if (normalizedRole === "ADMIN") return true;
+
   // ADMIN exclusive routes
   if (pathname.startsWith("/admin")) {
-    return normalizedRole === "ADMIN";
+    return false;
   }
 
   // MANAGER routes
   if (pathname.startsWith("/manager")) {
-    return normalizedRole === "MANAGER" || normalizedRole === "GESTOR" || normalizedRole === "ADMIN";
+    return normalizedRole === "MANAGER" || normalizedRole === "GESTOR";
   }
 
-  // STUDENT routes
-  if (pathname.startsWith("/student")) {
-    return normalizedRole === "STUDENT" || normalizedRole === "ALUNO" || normalizedRole === "ADMIN";
-  }
-
-  // Coordinator routes (/dashboard, /shifts, /classes, /students, /requests)
-  const coordinatorRoutes = ["/dashboard", "/shifts", "/classes", "/students", "/requests"];
+  // Coordinator routes (/dashboard, /shifts, /classes, /students, /courses, /coordinator)
+  const coordinatorRoutes = ["/dashboard", "/shifts", "/classes", "/students", "/courses", "/coordinator"];
   if (coordinatorRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
-    return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR" || normalizedRole === "ADMIN";
+    return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR";
   }
 
   return true;
 }
+
