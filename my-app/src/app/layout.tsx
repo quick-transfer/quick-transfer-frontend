@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -10,6 +11,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "Quick Transfer",
+  description: "Sistema de gerenciamento de turnos, turmas e alunos",
 };
 
 export default function RootLayout({
