@@ -1,14 +1,15 @@
 "use client";
 
-import { use, useState } from "react";
-import { AppShell } from "@/components/layout";
+import { use } from "react";
+import { AppShell, PageHeader } from "@/components/layout";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Ban, CalendarCheck, Calendar, Wrench, CheckCircle, UserPlus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { Calendar, Wrench, CheckCircle, UserPlus, ArrowLeft } from "lucide-react";
 import { mockStudents } from "@/lib/mock-data";
-import { useRouter } from "next/navigation";
-import { InterviewSchedulingModal } from "@/components/features/manager/interview-scheduling-modal";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -16,32 +17,30 @@ interface PageProps {
 
 export default function ManagerStudentDetailPage({ params }: PageProps) {
   const resolvedParams = use(params);
-  const router = useRouter();
 
   const student = mockStudents.find((s) => s.id === resolvedParams.id) || mockStudents[0];
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-
-  const handleConfirmInterview = (data: { date: string; time: string; notes: string }) => {
-    // // TODO: integrar endpoint de notificação ao coordenador por e-mail
-    setSuccessMsg(
-      `Entrevista com ${student.name} agendada com sucesso para ${data.date} às ${data.time}! Notificação enviada por e-mail ao coordenador.`
-    );
-    setTimeout(() => setSuccessMsg(""), 6000);
-  };
 
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Cursos" },
-        { label: "Técnico em Mecatrônica" },
-        { label: "Turma A - 2023.2" },
+        { label: "Gestor" },
+        { label: "Alunos", href: "/manager/students" },
+        { label: student.name },
       ]}
     >
-      <div className="space-y-6 pb-24">
-        {/* Título Principal */}
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Detalhes do Aluno</h1>
+      <div className="space-y-6">
+        <PageHeader
+          title={`Detalhes do Aluno: ${student.name}`}
+          description={`Matrícula: ${student.registration}`}
+          actions={
+            <Link
+              href="/manager/students"
+              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
+            >
+              <ArrowLeft className="size-4" /> Voltar
+            </Link>
+          }
+        />
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Coluna Esquerda: Informações & Habilidades */}
@@ -235,40 +234,6 @@ export default function ManagerStudentDetailPage({ params }: PageProps) {
             </div>
           </div>
         </div>
-
-        {/* Rodapé Fixo de Ações para o Aluno */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 px-6 py-3 shadow-lg flex items-center justify-between lg:pl-64">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition"
-          >
-            <Ban className="size-4" /> Recusar
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary-900 text-white text-sm font-semibold hover:bg-primary-950 transition"
-          >
-            <CalendarCheck className="size-4" /> Marcar Entrevista
-          </button>
-        </div>
-
-        {/* Modal de Agendamento */}
-        <InterviewSchedulingModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          candidateName={student.name}
-          onConfirm={handleConfirmInterview}
-        />
-
-        {/* Toast Notificação de Sucesso */}
-        {successMsg && (
-          <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium animate-in fade-in slide-in-from-top-4">
-            {successMsg}
-          </div>
-        )}
       </div>
     </AppShell>
   );
