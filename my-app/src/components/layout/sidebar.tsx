@@ -94,6 +94,23 @@ const navigation: SidebarNavSection[] = [
     ],
   },
   {
+    title: "Gestor",
+    items: [
+      {
+        label: "Minhas Vagas",
+        href: "/manager/vacancies",
+        icon: "Briefcase",
+        roles: ["MANAGER", "ADMIN"],
+      },
+      {
+        label: "Alunos",
+        href: "/manager/students",
+        icon: "Users",
+        roles: ["MANAGER", "ADMIN"],
+      },
+    ],
+  },
+  {
     title: "Administração",
     items: [
       {

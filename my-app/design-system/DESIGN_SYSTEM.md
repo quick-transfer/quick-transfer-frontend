@@ -14,7 +14,7 @@ Cor dominante usada na sidebar, background do login, botões primários e cabeç
 |------------------|-------------|------------------------------------------------------|
 | `primary-50`     | `#ECF1FF`   | Background da sidebar, áreas sutis                   |
 | `primary-100`    | `#D5E3FF`   | Hover leve, background de seleção                    |
-| `primary-200`    | `#A7C8FF`   | Bordas de botões primários, divisores claros          |
+| `primary-200`    | `#A7C8FF`   | Bordas de botões primários, divisores claros         |
 | `primary-300`    | `#89ACE7`   | Borda do botão de login, ícones inativos             |
 | `primary-400`    | `#6E92CA`   | Links hover, ícones secundários                      |
 | `primary-500`    | `#5478AF`   | Links ativos, ícones de ação                         |
@@ -33,7 +33,7 @@ Usado em elementos de suporte, backgrounds secundários e destaques informativos
 | `secondary-50`     | `#E3F3FF`   | Background de áreas de conteúdo              |
 | `secondary-100`    | `#C4E7FF`   | Bordas de tabelas, separadores               |
 | `secondary-200`    | `#7BD0FF`   | Bordas de inputs, estados leves              |
-| `secondary-300`    | `#2DB7F2`   | Ícones informativos, destaques              |
+| `secondary-300`    | `#2DB7F2`   | Ícones informativos, destaques               |
 | `secondary-400`    | `#009BD1`   | Links secundários, ações informativas        |
 | `secondary-500`    | `#0080AD`   | Botões secundários, texto de ênfase          |
 | `secondary-600`    | `#00668A`   | Hover de botões secundários                  |
@@ -117,18 +117,18 @@ Observadas nos badges das telas de admin (entrevistas, vagas, cursos, usuários)
 
 Baseada nos exemplos "Aa" da folha de tokens e nos textos das telas:
 
-| Token / Uso               | Tamanho (px) | Tamanho (rem) | Peso     | Line Height | Exemplo no protótipo                         |
-|---------------------------|-------------|---------------|----------|-------------|-----------------------------------------------|
-| `display-lg`              | 44px        | 2.75rem       | 300      | 1.1         | "Quick Transfer" no login                     |
-| `heading-xl`              | 32px        | 2rem          | 600      | 1.25        | "Login" no card                               |
-| `heading-lg`              | 24px        | 1.5rem        | 600      | 1.33        | Títulos de página ("Painel do Coordenador")   |
-| `heading-md`              | 20px        | 1.25rem       | 600      | 1.4         | Títulos de seção, labels de form              |
-| `heading-sm`              | 16px        | 1rem          | 600      | 1.5         | Nomes em cards, cabeçalhos de tabela          |
-| `body-lg`                 | 16px        | 1rem          | 400      | 1.5         | Corpo principal, botões                       |
-| `body-md`                 | 14px        | 0.875rem      | 400      | 1.5         | Texto de tabela, campos de formulário         |
-| `body-sm`                 | 12px        | 0.75rem       | 400      | 1.5         | Captions, labels auxiliares, pagination info  |
-| `body-xs`                 | 10px        | 0.625rem      | 400      | 1.4         | Badges de status (texto pequeno)              |
-| `number-stat`             | 48px        | 3rem          | 700      | 1.0         | Números grandes nos cards de estatística      |
+| Token / Uso               | Tamanho (px) | Tamanho (rem) | Peso     | Line Height | Exemplo no protótipo                          |
+|---------------------------|--------------|---------------|----------|-------------|-----------------------------------------------|
+| `display-lg`              | 44px         | 2.75rem       | 300      | 1.1         | "Quick Transfer" no login                     |
+| `heading-xl`              | 32px         | 2rem          | 600      | 1.25        | "Login" no card                               |
+| `heading-lg`              | 24px         | 1.5rem        | 600      | 1.33        | Títulos de página ("Painel do Coordenador")   |
+| `heading-md`              | 20px         | 1.25rem       | 600      | 1.4         | Títulos de seção, labels de form              |
+| `heading-sm`              | 16px         | 1rem          | 600      | 1.5         | Nomes em cards, cabeçalhos de tabela          |
+| `body-lg`                 | 16px         | 1rem          | 400      | 1.5         | Corpo principal, botões                       |
+| `body-md`                 | 14px         | 0.875rem      | 400      | 1.5         | Texto de tabela, campos de formulário         |
+| `body-sm`                 | 12px         | 0.75rem       | 400      | 1.5         | Captions, labels auxiliares, pagination info  |
+| `body-xs`                 | 10px         | 0.625rem      | 400      | 1.4         | Badges de status (texto pequeno)              |
+| `number-stat`             | 48px         | 3rem          | 700      | 1.0         | Números grandes nos cards de estatística      |
 
 ---
 
@@ -139,8 +139,7 @@ Baseada nos exemplos "Aa" da folha de tokens e nos textos das telas:
 Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 
 | Token   | Valor  | Uso principal                                          |
-|---------|--------|--------------------------------------------------------
-|
+|---------|--------|--------------------------------------------------------|
 | `sp-1`  | 4px    | Gap mínimo entre ícone e texto inline                  |
 | `sp-2`  | 8px    | Padding interno de badges, gap entre itens de lista    |
 | `sp-3`  | 12px   | Padding de inputs, gap pequeno entre elementos         |
@@ -154,7 +153,7 @@ Observada nos protótipos (padding de cards, gaps entre elementos, margens):
 
 ### 4.2 Raio de Borda (Border Radius)
 
-| Token          | Valor  | Uso                                           |
+| Token          | Valor  | Uso                                            |
 |----------------|--------|------------------------------------------------|
 | `radius-sm`    | 4px    | Badges de status, tags pequenas                |
 | `radius-md`    | 8px    | Inputs, botões, cards de lista                 |

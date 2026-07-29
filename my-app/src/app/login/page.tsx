@@ -88,6 +88,37 @@ export default function Login() {
         }
     }
 
+export default function Login() {
+    const router = useRouter()
+
+    const [usuario, setUsuario] = useState("")
+    const [senha, setSenha] = useState("")
+    const [carregando, setCarregando] = useState(false)
+    const [erro, setErro] = useState("")
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault()
+        setErro("")
+        setCarregando(true)
+
+        // Simulação de login mockado enquanto a API real não fica pronta
+        setTimeout(() => {
+            setCarregando(false)
+            
+            // Aceita qualquer usuário e senha preenchidos, ou validações específicas
+            if (usuario.trim() && senha.trim()) {
+                // Salva um token mockado no localStorage
+                localStorage.setItem("authToken", "mock-token-quick-transfer-12345")
+                localStorage.setItem("user", JSON.stringify({ name: usuario }))
+                
+                // Redireciona para a página principal / dashboard
+                router.push("/")
+            } else {
+                setErro("Por favor, preencha o usuário e a senha.")
+            }
+        }, 800)
+    }
+
     return (
         <main className="flex h-screen font-sans">
             <section className="relative hidden h-screen lg:block lg:w-3/5">
