@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Lock, Ban, CalendarCheck } from "lucide-react";
+import { Search, Lock, Ban } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InterviewSchedulingModal } from "@/components/features/manager/interview-scheduling-modal";
@@ -52,6 +52,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
 
   // Suporta múltiplos alunos alocados respeitando o limite de vagas (spots)
   const [assignedStudentIds, setAssignedStudentIds] = useState<string[]>(["std-1"]);
+  const [rejectedStudentIds, setRejectedStudentIds] = useState<string[]>([]);
   const isEditing = resolvedParams.id !== "new" && resolvedParams.id !== "vac-new";
 
   // Estado do Modal de Agendamento de Entrevista e Notificações
@@ -96,7 +97,25 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
         return;
       }
       setAssignedStudentIds((prev) => [...prev, candidate.id]);
+      setRejectedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
       setInterviewSuccessMessage(`Aluno ${candidate.name} alocado nesta vaga com sucesso! (${assignedStudentIds.length + 1}/${spots})`);
+    }
+    setTimeout(() => setInterviewSuccessMessage(""), 5000);
+  };
+
+  const handleRejectCandidate = (candidate: Candidate, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const isRejected = rejectedStudentIds.includes(candidate.id);
+
+    if (isRejected) {
+      setRejectedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
+      setInterviewSuccessMessage(`Candidatura de ${candidate.name} restaurada para esta vaga.`);
+    } else {
+      setRejectedStudentIds((prev) => [...prev, candidate.id]);
+      setAssignedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
+      setInterviewSuccessMessage(`Candidato ${candidate.name} recusado para esta vaga.`);
     }
     setTimeout(() => setInterviewSuccessMessage(""), 5000);
   };
@@ -108,9 +127,9 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Cursos" },
-        { label: "Técnico em Mecatrônica" },
-        { label: "Turma A - 2023.2" },
+        { label: "Gestor" },
+        { label: "Vagas", href: "/manager/vacancies" },
+        { label: isEditing ? jobTitle : "Nova Vaga" },
       ]}
     >
       <div className="space-y-6 pb-12">
@@ -314,6 +333,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
               {filteredCandidates.map((candidate, idx) => {
                 const isAssigned = assignedStudentIds.includes(candidate.id);
+                const isRejected = rejectedStudentIds.includes(candidate.id);
                 let badgeStyle = "text-emerald-600 border-emerald-300 bg-emerald-50";
                 if (candidate.matchPercentage < 50) badgeStyle = "text-rose-600 border-rose-300 bg-rose-50";
                 else if (candidate.matchPercentage < 80) badgeStyle = "text-amber-600 border-amber-300 bg-amber-50";
@@ -322,9 +342,11 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                   <div
                     key={`${candidate.id}-${idx}`}
                     className={`p-3 rounded-xl border transition ${
-                      isAssigned
-                        ? "bg-emerald-50/70 border-emerald-300 shadow-sm"
-                        : "bg-white border-slate-200 hover:border-slate-300"
+                      isRejected
+                        ? "bg-rose-50/70 border-rose-200 opacity-75"
+                        : isAssigned
+                          ? "bg-emerald-50/70 border-emerald-300 shadow-sm"
+                          : "bg-white border-slate-200 hover:border-slate-300"
                     }`}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -353,9 +375,13 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                       </span>
                     </div>
 
-                    {/* Status de Alocado na Vaga + Botão de Alocação / Entrevista */}
+                    {/* Status do candidato + ações de alocação / recusa / entrevista */}
                     <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
-                      {isAssigned ? (
+                      {isRejected ? (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-800 bg-rose-100 border border-rose-300 px-2 py-0.5 rounded-full">
+                          Recusado
+                        </span>
+                      ) : isAssigned ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
                           ✓ Alocado nesta Vaga
                         </span>
@@ -364,23 +390,39 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                       )}
 
                       <div className="flex items-center gap-2">
+                        {!isRejected && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={(e) => handleAssignStudent(candidate, e)}
+                              className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition ${
+                                isAssigned
+                                  ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
+                                  : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+                              }`}
+                            >
+                              {isAssigned ? "Remover" : "Colocar na Vaga"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenInterviewModal(candidate)}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-900 text-white hover:bg-primary-950 transition"
+                            >
+                              Entrevista
+                            </button>
+                          </>
+                        )}
                         <button
                           type="button"
-                          onClick={(e) => handleAssignStudent(candidate, e)}
-                          className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition ${
-                            isAssigned
+                          onClick={(e) => handleRejectCandidate(candidate, e)}
+                          className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition flex items-center gap-1 ${
+                            isRejected
                               ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
-                              : "bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700"
+                              : "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
                           }`}
                         >
-                          {isAssigned ? "Remover" : "Colocar na Vaga"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleOpenInterviewModal(candidate)}
-                          className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-900 text-white hover:bg-primary-950 transition"
-                        >
-                          Entrevista
+                          <Ban className="size-3" />
+                          {isRejected ? "Restaurar" : "Recusar"}
                         </button>
                       </div>
                     </div>
