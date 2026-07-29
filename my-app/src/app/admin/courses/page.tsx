@@ -3,22 +3,103 @@
 import { useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { Fab } from "@/components/shared/fab";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockCourses } from "@/lib/mock-data";
 import type { CourseDTO } from "@/types";
-import { BookOpen, Edit } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookOpen, Edit, Plus, Trash2 } from "lucide-react";
 
-export default function CursosPage() {
+export default function CursosAdminPage() {
+  const [courses, setCourses] = useState<CourseDTO[]>(mockCourses);
   const [filterTab, setFilterTab] = useState<string>("ALL");
+  const [editingCourse, setEditingCourse] = useState<CourseDTO | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isNewOpen, setIsNewOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingCourse, setDeletingCourse] = useState<CourseDTO | null>(null);
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const filteredCourses = mockCourses.filter((course) => {
+  // Form state
+  const [formName, setFormName] = useState("");
+  const [formCode, setFormCode] = useState("");
+  const [formCoordinator, setFormCoordinator] = useState("");
+  const [formStatus, setFormStatus] = useState<"ACTIVE" | "COMPLETED">("ACTIVE");
+
+  const filteredCourses = courses.filter((course) => {
     if (filterTab === "ACTIVE") return course.status === "ACTIVE";
     if (filterTab === "COMPLETED") return course.status === "COMPLETED";
     return true;
   });
+
+  const openEdit = (course: CourseDTO) => {
+    setEditingCourse(course);
+    setFormName(course.name);
+    setFormCode(course.code);
+    setFormCoordinator(course.coordinatorName);
+    setFormStatus(course.status === "COMPLETED" ? "COMPLETED" : "ACTIVE");
+    setIsEditOpen(true);
+  };
+
+  const openNew = () => {
+    setFormName("");
+    setFormCode("");
+    setFormCoordinator("");
+    setFormStatus("ACTIVE");
+    setIsNewOpen(true);
+  };
+
+  const openDelete = (course: CourseDTO) => {
+    setDeletingCourse(course);
+    setIsDeleteOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingCourse) return;
+    setCourses((prev) =>
+      prev.map((c) =>
+        c.id === editingCourse.id
+          ? { ...c, name: formName, code: formCode, coordinatorName: formCoordinator, status: formStatus }
+          : c
+      )
+    );
+    setIsEditOpen(false);
+    setSuccessMsg("Curso atualizado com sucesso!");
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
+
+  const handleCreate = () => {
+    if (!formName.trim() || !formCode.trim()) return;
+    const newCourse: CourseDTO = {
+      id: `crs-${Date.now()}`,
+      name: formName,
+      code: formCode,
+      coordinatorName: formCoordinator,
+      totalStudents: 0,
+      status: formStatus,
+    };
+    setCourses((prev) => [...prev, newCourse]);
+    setIsNewOpen(false);
+    setSuccessMsg("Curso criado com sucesso!");
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deletingCourse) return;
+    setCourses((prev) => prev.filter((c) => c.id !== deletingCourse.id));
+    setIsDeleteOpen(false);
+    setSuccessMsg(`Curso "${deletingCourse.name}" excluído com sucesso.`);
+    setTimeout(() => setSuccessMsg(""), 4000);
+  };
 
   const columns: DataTableColumn<CourseDTO>[] = [
     {
@@ -65,10 +146,26 @@ export default function CursosPage() {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: () => (
-        <Button variant="outline" size="sm" className="gap-1">
-          <Edit className="size-3.5" /> Editar
-        </Button>
+      render: (course) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Editar curso"
+            onClick={() => openEdit(course)}
+          >
+            <Edit className="size-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive hover:text-destructive hover:bg-red-50"
+            aria-label="Excluir curso"
+            onClick={() => openDelete(course)}
+          >
+            <Trash2 className="size-3.5" />
+          </Button>
+        </div>
       ),
     },
   ];
@@ -84,6 +181,11 @@ export default function CursosPage() {
         <PageHeader
           title="Cursos Técnicos e Profissionalizantes"
           description="Catálogo de programas de qualificação técnica oferecidos na unidade"
+          actions={
+            <Button className="gap-2 bg-primary text-white hover:bg-primary-700" onClick={openNew}>
+              <Plus className="size-4" /> Novo Curso
+            </Button>
+          }
         />
 
         <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
@@ -103,10 +205,111 @@ export default function CursosPage() {
           searchKeys={["name", "code", "coordinatorName"]}
           getRowKey={(row) => row.id}
         />
-
-        {/* Floating Action Button (+) */}
-        <Fab label="Novo Curso" onClick={() => alert("Abrir formulário de novo curso")} />
       </div>
+
+      {/* Modal de Edição */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">Editar Curso</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">Altere as informações do curso.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nome do Curso</label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} className="h-10 border-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Código</label>
+                <Input value={formCode} onChange={(e) => setFormCode(e.target.value)} className="h-10 border-slate-200" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as "ACTIVE" | "COMPLETED")}
+                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="ACTIVE">Em Andamento</option>
+                  <option value="COMPLETED">Concluído</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Coordenador</label>
+              <Input value={formCoordinator} onChange={(e) => setFormCoordinator(e.target.value)} className="h-10 border-slate-200" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} className="bg-primary-900 text-white hover:bg-primary-950">Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Novo Curso */}
+      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">Novo Curso</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">Preencha para cadastrar um novo curso.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nome do Curso <span className="text-red-500">*</span></label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Técnico em Mecatrônica" className="h-10 border-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Código <span className="text-red-500">*</span></label>
+                <Input value={formCode} onChange={(e) => setFormCode(e.target.value)} placeholder="MEC-2024" className="h-10 border-slate-200" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as "ACTIVE" | "COMPLETED")}
+                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="ACTIVE">Em Andamento</option>
+                  <option value="COMPLETED">Concluído</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Coordenador</label>
+              <Input value={formCoordinator} onChange={(e) => setFormCoordinator(e.target.value)} placeholder="Nome do coordenador" className="h-10 border-slate-200" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={!formName.trim() || !formCode.trim()} className="bg-primary-900 text-white hover:bg-primary-950">Criar Curso</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Exclusão */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-sm bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">Confirmar Exclusão</DialogTitle>
+            <DialogDescription className="text-sm text-slate-600">
+              Deseja realmente excluir o curso <strong className="text-slate-800">{deletingCourse?.name}</strong>? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+            <Button onClick={handleConfirmDelete} className="bg-red-600 text-white hover:bg-red-700">Excluir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {successMsg && (
+        <div className="fixed top-20 right-6 z-50 max-w-sm p-4 bg-emerald-800 text-white rounded-lg shadow-xl text-sm font-medium">
+          {successMsg}
+        </div>
+      )}
     </AppShell>
   );
 }

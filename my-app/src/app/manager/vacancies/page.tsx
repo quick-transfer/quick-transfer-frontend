@@ -63,9 +63,8 @@ export default function ManagerVacanciesPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Cursos" },
-        { label: "Técnico em Mecatrônica" },
-        { label: "Turma A - 2023.2" },
+        { label: "Gestor", href: "/manager/vacancies" },
+        { label: "Minhas Vagas" },
       ]}
     >
       <div className="space-y-6">
@@ -93,7 +92,7 @@ export default function ManagerVacanciesPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Minhas Vagas</h1>
             <Link
-              href="/manager/vacancies/vac-1"
+              href="/manager/vacancies/new"
               className={cn(
                 buttonVariants({ variant: "default" }),
                 "bg-primary-900 text-white hover:bg-primary-950 font-medium px-4 py-2 rounded-lg flex items-center gap-2"
@@ -130,9 +129,10 @@ export default function ManagerVacanciesPage() {
           {/* Grid de Vagas */}
           <div className="grid gap-4 md:grid-cols-3">
             {filteredVacancies.map((vacancy) => (
-              <div
+              <Link
                 key={vacancy.id}
-                className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition flex flex-col justify-between"
+                href={`/manager/vacancies/${vacancy.id}`}
+                className="block bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-primary-300 transition-all cursor-pointer"
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-3">
@@ -156,7 +156,7 @@ export default function ManagerVacanciesPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-6">
+                  <div className="flex items-center justify-between text-xs text-slate-500 mb-4">
                     <span className="flex items-center gap-1">
                       <Briefcase className="size-3.5 text-slate-400" /> {vacancy.department}
                     </span>
@@ -166,32 +166,23 @@ export default function ManagerVacanciesPage() {
 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   {vacancy.status !== "PREENCHIDA" ? (
-                    <Link
-                      href={`/manager/vacancies/${vacancy.id}`}
-                      className="flex items-center gap-2 text-xs font-semibold text-primary-800 hover:text-primary-950 transition"
-                    >
+                    <div className="flex items-center gap-2 text-xs font-semibold text-primary-800">
                       <div className="flex -space-x-2">
                         <div className="size-6 rounded-full bg-blue-200 border-2 border-white"></div>
                         <div className="size-6 rounded-full bg-indigo-200 border-2 border-white"></div>
                         <div className="size-6 rounded-full bg-pink-200 border-2 border-white"></div>
                       </div>
                       <span>{vacancy.recommendedCount} candidatos recomendados</span>
-                    </Link>
+                    </div>
                   ) : (
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium">
                       <CheckCircle2 className="size-4 text-emerald-600" />
                       <span>Vaga concluída com sucesso</span>
                     </div>
                   )}
-
-                  <Link
-                    href={`/manager/vacancies/${vacancy.id}`}
-                    className="text-slate-400 hover:text-primary-800 transition"
-                  >
-                    <ChevronRight className="size-5" />
-                  </Link>
+                  <ChevronRight className="size-5 text-slate-400" />
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

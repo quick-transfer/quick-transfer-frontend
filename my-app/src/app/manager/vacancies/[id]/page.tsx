@@ -50,6 +50,9 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   const [req2Level, setReq2Level] = useState(7);
   const [req2Priority, setReq2Priority] = useState(false);
 
+  // Modo de visualização (somente leitura por padrão) vs modo de edição
+  const [isViewMode, setIsViewMode] = useState(true);
+
   // Suporta múltiplos alunos alocados respeitando o limite de vagas (spots)
   const [assignedStudentIds, setAssignedStudentIds] = useState<string[]>(["std-1"]);
   const [rejectedStudentIds, setRejectedStudentIds] = useState<string[]>([]);
@@ -65,7 +68,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
     setIsModalOpen(true);
   };
 
-  const handleConfirmInterview = (data: { date: string; time: string; notes: string }) => {
+  const handleConfirmInterview = (data: { date: string; time: string; notes: string; vacancyId: string }) => {
     setInterviewSuccessMessage(
       `Entrevista agendada com sucesso para ${selectedCandidate?.name} no dia ${data.date} às ${data.time}! O coordenador foi notificado por e-mail.`
     );
@@ -127,40 +130,54 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Gestor" },
-        { label: "Vagas", href: "/manager/vacancies" },
+        { label: "Gestor", href: "/manager/vacancies" },
+        { label: "Minhas Vagas", href: "/manager/vacancies" },
         { label: isEditing ? jobTitle : "Nova Vaga" },
       ]}
     >
       <div className="space-y-6 pb-12">
-        {/* Cabeçalho da Vaga com título e botão Salvar / Criar no topo */}
+        {/* Cabeçalho da Vaga */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
             <h1 className="text-xl font-bold text-slate-900">
-              {isEditing ? `Editar Vaga: ${jobTitle}` : "Criar Nova Vaga"}
+              {isEditing ? jobTitle : "Criar Nova Vaga"}
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              {isEditing
+              {isViewMode
+                ? "Visualização da vaga. Clique em \"Editar Vaga\" para realizar alterações."
+                : isEditing
                 ? "Atualize as informações e requisitos da vaga para ajustar o perfil recomendado"
                 : "Preencha os campos abaixo para disponibilizar uma nova vaga para os alunos"}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/manager/vacancies")}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleSaveVacancy}
-              className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 rounded-lg shadow-sm transition"
-            >
-              {isEditing ? "Salvar Alterações" : "Criar Vaga"}
-            </button>
+            {isViewMode ? (
+              <button
+                type="button"
+                onClick={() => setIsViewMode(false)}
+                className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 rounded-lg shadow-sm transition"
+              >
+                Editar Vaga
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => { if (isEditing) setIsViewMode(true); else router.push("/manager/vacancies"); }}
+                  className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveVacancy}
+                  className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 rounded-lg shadow-sm transition"
+                >
+                  {isEditing ? "Salvar Alterações" : "Criar Vaga"}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
