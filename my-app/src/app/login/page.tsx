@@ -29,13 +29,12 @@ export default function Login() {
 
         // ── 1. MOCK / MODO TESTE TEMPORÁRIO ──
         // Permite testes locais caso a API Spring Boot (localhost:8080) não esteja rodando ou para usuários de teste
-        const isMockUser = inputUser === "admin_test" || inputUser === "coordenador_test" || inputUser === "gestor_test" || inputUser === "aluno_test";
+        const isMockUser = inputUser === "admin_test" || inputUser === "coordenador_test" || inputUser === "gestor_test";
 
         if (isMockUser) {
             let role: UserRole = "ADMIN";
             if (inputUser === "coordenador_test") role = "COORDINATOR";
             if (inputUser === "gestor_test") role = "MANAGER";
-            if (inputUser === "aluno_test") role = "STUDENT";
 
             // Define cookies de sessão mock para testes sem localStorage
             document.cookie = `${AUTH_COOKIE_NAME}=mock_token_${inputUser}; path=/; max-age=86400`;
@@ -88,37 +87,6 @@ export default function Login() {
         }
     }
 
-export default function Login() {
-    const router = useRouter()
-
-    const [usuario, setUsuario] = useState("")
-    const [senha, setSenha] = useState("")
-    const [carregando, setCarregando] = useState(false)
-    const [erro, setErro] = useState("")
-
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault()
-        setErro("")
-        setCarregando(true)
-
-        // Simulação de login mockado enquanto a API real não fica pronta
-        setTimeout(() => {
-            setCarregando(false)
-            
-            // Aceita qualquer usuário e senha preenchidos, ou validações específicas
-            if (usuario.trim() && senha.trim()) {
-                // Salva um token mockado no localStorage
-                localStorage.setItem("authToken", "mock-token-quick-transfer-12345")
-                localStorage.setItem("user", JSON.stringify({ name: usuario }))
-                
-                // Redireciona para a página principal / dashboard
-                router.push("/")
-            } else {
-                setErro("Por favor, preencha o usuário e a senha.")
-            }
-        }, 800)
-    }
-
     return (
         <main className="flex h-screen font-sans">
             <section className="relative hidden h-screen lg:block lg:w-3/5">
@@ -138,7 +106,7 @@ export default function Login() {
                     <Image
                         src="/assets/images/logo/logo-title-white.svg"
                         alt="Logo Weg"
-                        width={350}
+                        width={400}
                         height={47}
                     />
                 </div>
@@ -164,7 +132,7 @@ export default function Login() {
                                 value={usuario}
                                 onChange={(e) => setUsuario(e.target.value)}
                                 required
-                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-6 outline-none transition focus:border-primary-800 focus:bg-accent"
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
                             />
                         </div>
 
@@ -179,7 +147,7 @@ export default function Login() {
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
                                 required
-                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-6 outline-none transition focus:border-primary-800 focus:bg-accent"
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
                             />
 
                             <button type="button" className="mt-2 text-[16px] text-neutral-400 hover:text-primary-600 underline ml-1">
