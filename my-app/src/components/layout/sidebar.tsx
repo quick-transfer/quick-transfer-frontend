@@ -202,7 +202,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
       // Requisição POST para o endpoint de logout do backend Spring Boot enviando credentials: "include"
-      await apiFetch("/api/auth/logout", {
+      await apiFetch("/auth/logout", {
         method: "POST",
       });
     } catch (error) {
