@@ -111,7 +111,7 @@ export default function Login() {
                     />
                 </div>
 
-                <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
+                <div className="w-full max-w-md rounded-xl bg-card py-12 px-8 shadow-2xl">
                     <h2 className="text-center text-[32px] font-semibold text-card-foreground">Login</h2>
 
                     <div className="mx-auto mt-3 mb-6 h-0.5 w-28 bg-neutral-200"></div>
@@ -132,7 +132,7 @@ export default function Login() {
                                 value={usuario}
                                 onChange={(e) => setUsuario(e.target.value)}
                                 required
-                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-3 outline-none transition focus:border-primary-800 focus:bg-accent hover:bg-accent"
                             />
                         </div>
 
@@ -147,7 +147,7 @@ export default function Login() {
                                 value={senha}
                                 onChange={(e) => setSenha(e.target.value)}
                                 required
-                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
+                                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-3 outline-none transition focus:border-primary-800 focus:bg-accent"
                             />
 
                             <button type="button" className="mt-2 text-[16px] text-neutral-400 hover:text-primary-600 underline ml-1">

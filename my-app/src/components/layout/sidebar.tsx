@@ -286,7 +286,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       <Separator className="bg-neutral-200 flex-col" />
 
       {/* Footer */}
-      <div className="p-4">
+      <div className="p-3">
         <button
           onClick={handleLogout}
           disabled={saindo}
