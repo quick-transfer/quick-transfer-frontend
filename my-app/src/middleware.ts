@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { AUTH_COOKIE_NAME } from "@/lib/api";
-import { getRedirectPathByRole, isRouteAllowedForRole, ROLE_COOKIE_NAME } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  getRedirectPathByRole,
+  isJwtFresh,
+  isRouteAllowedForRole,
+  ROLE_COOKIE_NAME,
+} from "@/lib/auth";
+
+function redirectToLogin(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/login", request.url));
+  response.cookies.delete(AUTH_COOKIE_NAME);
+  response.cookies.delete(ROLE_COOKIE_NAME);
+  return response;
+}
 
 /**
  * Middleware de Proteção de Rotas e RBAC.
@@ -15,25 +27,29 @@ export function middleware(request: NextRequest) {
   const userRole = request.cookies.get(ROLE_COOKIE_NAME)?.value;
 
   const isLoginPage = pathname === "/login";
+  const hasFreshToken = isJwtFresh(authToken);
 
-  // Se o usuário estiver na rota /login e possuir um cookie de sessão válido,
-  // redireciona-o para a rota inicial padrão correspondente ao seu perfil (RBAC)
-  if (isLoginPage && authToken) {
-    const defaultRoute = getRedirectPathByRole(userRole);
-    return NextResponse.redirect(new URL(defaultRoute, request.url));
+  // A tela de login deve continuar acessível para permitir a recuperação de
+  // sessões inválidas. Cookies malformados ou expirados são removidos.
+  if (isLoginPage) {
+    const response = NextResponse.next();
+    if (authToken && !hasFreshToken) {
+      response.cookies.delete(AUTH_COOKIE_NAME);
+      response.cookies.delete(ROLE_COOKIE_NAME);
+    }
+    return response;
   }
 
-  // Se o usuário não possuir cookie de sessão válido e tentar acessar uma rota protegida,
-  // redireciona-o imediatamente para a página de login
-  if (!isLoginPage && !authToken) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+  // Um cookie presente não basta: ele também precisa ter formato JWT e não
+  // estar expirado. A assinatura será validada pelo backend em cada requisição.
+  if (!hasFreshToken) {
+    return redirectToLogin(request);
   }
 
   // Validação de RBAC (Role-Based Access Control) para usuários autenticados
   // Se tentar acessar uma rota não permitida para o seu papel (ex: ALUNO em /admin),
   // redireciona para a rota inicial permitida do seu perfil
-  if (authToken && !isLoginPage && !isRouteAllowedForRole(pathname, userRole)) {
+  if (!isRouteAllowedForRole(pathname, userRole)) {
     const allowedPath = getRedirectPathByRole(userRole);
     return NextResponse.redirect(new URL(allowedPath, request.url));
   }

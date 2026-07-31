@@ -1,19 +1,28 @@
-/**
- * Base URL do Backend Spring Boot.
- * Pode ser sobrescrito via variável de ambiente NEXT_PUBLIC_API_URL.
- */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-
-/**
- * Nome do cookie de autenticação JWT definido pelo backend Spring Boot.
- */
 export const AUTH_COOKIE_NAME = "authToken";
 
-/**
- * Função utilitária centralizada para realizar requisições HTTP para a API Spring Boot.
- * Por padrão, define `credentials: "include"` em todas as chamadas para que o navegador
- * envie e receba cookies com a flag HttpOnly.
- */
+// 1. Criando a classe ApiError
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+const HTTP_ERROR_MESSAGES: Partial<Record<number, string>> = {
+  500: "O servidor encontrou um erro interno. Tente novamente mais tarde.",
+  502: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
+  503: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
+  504: "O servidor demorou demais para responder. Tente novamente em alguns minutos.",
+};
+
+function defaultErrorMessage(status: number): string {
+  return HTTP_ERROR_MESSAGES[status] || `Erro HTTP! Status: ${status}`;
+}
+
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
@@ -25,29 +34,50 @@ export async function apiFetch<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    // Garantindo o envio e recebimento dos cookies HttpOnly no navegador
-    credentials: "include",
-  });
+  let response: Response;
 
-  if (!response.ok) {
-    let errorMessage = `Erro HTTP! Status: ${response.status}`;
-    try {
-      const errorData = await response.json();
-      if (errorData.message) {
-        errorMessage = errorData.message;
-      } else if (typeof errorData === "string") {
-        errorMessage = errorData;
-      }
-    } catch {
-      // Caso a resposta de erro não seja JSON
-    }
-    throw new Error(errorMessage);
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: "include",
+    });
+  } catch {
+    throw new ApiError(
+      "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      0
+    );
   }
 
-  // Tratamento para respostas sem conteúdo (204 No Content por exemplo)
+  if (!response.ok) {
+    let errorMessage = defaultErrorMessage(response.status);
+    try {
+      const contentType = response.headers.get("content-type") || "";
+      if (contentType.includes("application/json")) {
+        const errorData: unknown = await response.json();
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "message" in errorData &&
+          typeof errorData.message === "string" &&
+          errorData.message.trim()
+        ) {
+          errorMessage = errorData.message;
+        }
+      } else if (contentType.includes("text/plain")) {
+        const errorText = (await response.text()).trim();
+        if (errorText && errorText.length <= 500) {
+          errorMessage = errorText;
+        }
+      }
+    } catch {
+      // Ignora erro de parsing da resposta de erro
+    }
+
+    // 2. Usando ApiError consistentemente com o status da resposta HTTP
+    throw new ApiError(errorMessage, response.status);
+  }
+
   if (response.status === 204) {
     return {} as T;
   }
