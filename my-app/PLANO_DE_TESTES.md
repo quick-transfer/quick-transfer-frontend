@@ -39,7 +39,7 @@ Cada teste contemplado neste plano possui a seguinte estrutura padronizada de at
   1. Renderizar o componente `Sidebar` passando as propriedades de perfil.
   2. Verificar os itens de menu renderizados na arvore DOM.
 - **Resultado Esperado:** 
-  - **MANAGER:** Exibe seções "Minhas Vagas" e "Alunos" (`/manager/vacancies`, `/manager/students`).
+  - **MANAGER:** Exibe seções "Minhas Vagas", "Alunos" e "Entrevistas" (`/manager/vacancies`, `/manager/students`, `/manager/interviews`).
   - **COORDINATOR:** Exibe seções "Painel", "Turnos", "Turmas", "Alunos" e "Solicitações".
   - **ADMIN:** Exibe todas as seções incluindo "Painel Admin", "Usuários", "Locais", "Entrevistas" (`/admin/*`).
 - **Trecho de Código:**
@@ -214,8 +214,8 @@ describe("CT-006: Menu Mobile e Responsividade", () => {
 
 ---
 
-### CT-007: Telas do Perfil Gestor (Minhas Vagas e Meus Alunos)
-- **Funcionalidade Testada:** Módulo do Gestor (`src/app/manager/vacancies/page.tsx` e `src/app/manager/students/page.tsx`).
+### CT-007: Telas do Perfil Gestor (Minhas Vagas, Meus Alunos e Entrevistas)
+- **Funcionalidade Testada:** Módulo do Gestor (`src/app/manager/vacancies/page.tsx`, `src/app/manager/students/page.tsx` e `src/app/manager/interviews/page.tsx`).
 - **Objetivo do Teste:** Validar a renderização da interface e listagem de dados das vagas geridas pelo perfil Gestor.
 - **Pré-condições:** Autenticado com perfil `MANAGER`.
 - **Dados Utilizados:** Dados de `mockVacancies` em `src/lib/mock-data.ts`.
