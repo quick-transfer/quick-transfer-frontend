@@ -68,8 +68,8 @@ export const config = {
      * - _next/image (otimização de imagens)
      * - favicon.ico (ícone do navegador)
      * - imagens e recursos públicos (svg, png, jpg, jpeg, gif, webp, ico)
-     * - rotas públicas de API (/api/public por exemplo, caso existam)
+     * - proxy do backend, que precisa receber login e primeiro acesso sem sessão
      */
-    "/((?!_next/static|_next/image|favicon.ico|assets/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|assets/|backend/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
