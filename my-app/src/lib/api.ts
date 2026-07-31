@@ -1,21 +1,14 @@
-/**
- * Base URL do Backend Spring Boot.
- * Pode ser sobrescrito via variável de ambiente NEXT_PUBLIC_API_URL.
- */
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+export const AUTH_COOKIE_NAME = "authToken";
 
-/**
- * Nome do cookie de autenticação JWT definido pelo backend Spring Boot.
- */
-export const AUTH_COOKIE_NAME = "JWT";
-
+// 1. Criando a classe ApiError
 export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status: number,
-  ) {
+  status: number;
+
+  constructor(message: string, status: number) {
     super(message);
     this.name = "ApiError";
+    this.status = status;
   }
 }
 
@@ -59,7 +52,7 @@ export async function apiFetch<T = unknown>(
   } catch {
     throw new ApiError(
       "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
-      0,
+      0
     );
   }
 
@@ -87,13 +80,14 @@ export async function apiFetch<T = unknown>(
         }
       }
     } catch {
-      // Caso a resposta de erro não seja JSON
+      // Ignora erro de parsing da resposta de erro
     }
+
+    // 2. Usando ApiError consistentemente com o status da resposta HTTP
     throw new ApiError(errorMessage, response.status);
   }
 
-  // Tratamento para respostas sem conteúdo (204 No Content por exemplo)
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
+  if (response.status === 204) {
     return {} as T;
   }
 

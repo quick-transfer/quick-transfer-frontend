@@ -1,4 +1,5 @@
-"use client";
+"use client"
+
 
 import "@/app/globals.css";
 import { FormEvent, useState } from "react";
@@ -87,7 +88,7 @@ export default function Login() {
 
     try {
       await authenticate(username, senha);
-    } catch (error: unknown) {
+    } catch (error: any) {
       // No contrato atual do backend, 403 no endpoint público de login indica primeiro acesso.
       if (error instanceof ApiError && error.status === 403) {
         setPrimeiroAcesso(true);

@@ -3,7 +3,7 @@ import { UserRole } from "@/types";
 /**
  * Authentication JWT session cookie name.
  */
-export const AUTH_COOKIE_NAME = "JWT";
+export const AUTH_COOKIE_NAME = "authToken";
 
 /**
  * User role cookie name.
