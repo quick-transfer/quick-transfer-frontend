@@ -1,5 +1,4 @@
-"use client"
-
+"use client";
 
 import "@/app/globals.css";
 import { FormEvent, useState } from "react";
@@ -7,7 +6,17 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { apiFetch, ApiError } from "@/lib/api";
-import { getRedirectPathByRole, ROLE_COOKIE_NAME } from "@/lib/auth";
+import {
+  AUTH_COOKIE_NAME,
+  getRedirectPathByRole,
+  ROLE_COOKIE_NAME,
+} from "@/lib/auth";
+import {
+  authenticateMockUser,
+  createMockSessionToken,
+  IS_MOCK_AUTH_ENABLED,
+  MOCK_AUTH_CREDENTIALS,
+} from "@/lib/mock-auth";
 import { UserRole } from "@/types";
 
 type AuthenticatedUser = {
@@ -63,9 +72,19 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  const finishLogin = (authenticatedUser: AuthenticatedUser) => {
+  const finishLogin = (
+    authenticatedUser: AuthenticatedUser,
+    mockSessionToken?: string
+  ) => {
     const secure = window.location.protocol === "https:" ? "; secure" : "";
     document.cookie = `${ROLE_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.role)}; path=/; max-age=86400; samesite=strict${secure}`;
+
+    // O backend grava seu JWT HttpOnly no login real. Somente o modo mock precisa
+    // criar o cookie de sessão no navegador para atravessar o middleware do Next.
+    if (mockSessionToken) {
+      document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(mockSessionToken)}; path=/; max-age=28800; samesite=strict${secure}`;
+    }
+
     router.replace(getRedirectPathByRole(authenticatedUser.role));
     router.refresh();
   };
@@ -86,9 +105,23 @@ export default function Login() {
   const handleLogin = async () => {
     const username = usuario.trim();
 
+    // O nome reservado do usuário mock evita esperar o timeout de uma API fora do ar.
+    // Usuários reais continuam sempre passando pelo endpoint oficial de autenticação.
+    if (IS_MOCK_AUTH_ENABLED && username === MOCK_AUTH_CREDENTIALS.username) {
+      const mockUser = authenticateMockUser(username, senha);
+
+      if (!mockUser) {
+        setErro("Senha do usuário de contingência inválida.");
+        return;
+      }
+
+      finishLogin(mockUser, createMockSessionToken(mockUser));
+      return;
+    }
+
     try {
       await authenticate(username, senha);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // No contrato atual do backend, 403 no endpoint público de login indica primeiro acesso.
       if (error instanceof ApiError && error.status === 403) {
         setPrimeiroAcesso(true);
@@ -197,6 +230,21 @@ export default function Login() {
               }`}
             >
               {erro}
+            </div>
+          )}
+
+          {IS_MOCK_AUTH_ENABLED && !primeiroAcesso && (
+            <div className="mb-4 rounded-lg border border-status-warning-foreground/20 bg-status-warning p-3 text-sm text-status-warning-foreground">
+              <p className="font-semibold">Acesso de contingência</p>
+              <p>
+                Usuário: <code>{MOCK_AUTH_CREDENTIALS.username}</code>
+              </p>
+              <p>
+                Senha: <code>{MOCK_AUTH_CREDENTIALS.password}</code>
+              </p>
+              <p className="mt-1 text-xs">
+                Permite navegar como administrador sem consultar a API.
+              </p>
             </div>
           )}
 
