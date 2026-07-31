@@ -27,6 +27,7 @@ function friendlyLoginError(error: unknown) {
   if (error instanceof ApiError) {
     if (error.status === 401) return "Usuário ou senha inválidos.";
     if (error.status === 404) return "Usuário não encontrado.";
+    if (error.status === 0 || error.status >= 500) return error.message;
   }
 
   if (error.message === "Failed to fetch") {
@@ -34,6 +35,20 @@ function friendlyLoginError(error: unknown) {
   }
 
   return error.message || "Não foi possível realizar o login.";
+}
+
+// Valida a resposta em tempo de execução antes de gravar cookies e redirecionar.
+function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
+  if (typeof value !== "object" || value === null) return false;
+
+  const user = value as Record<string, unknown>;
+  return (
+    typeof user.id === "string" &&
+    typeof user.name === "string" &&
+    typeof user.username === "string" &&
+    typeof user.role === "string" &&
+    ["ADMIN", "COORDINATOR", "MANAGER", "STUDENT"].includes(user.role)
+  );
 }
 
 export default function Login() {
@@ -48,16 +63,22 @@ export default function Login() {
   const [erro, setErro] = useState("");
 
   const finishLogin = (authenticatedUser: AuthenticatedUser) => {
-    document.cookie = `${ROLE_COOKIE_NAME}=${authenticatedUser.role}; path=/; max-age=86400; samesite=lax`;
+    const secure = window.location.protocol === "https:" ? "; secure" : "";
+    document.cookie = `${ROLE_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.role)}; path=/; max-age=86400; samesite=strict${secure}`;
     router.replace(getRedirectPathByRole(authenticatedUser.role));
     router.refresh();
   };
 
   const authenticate = async (username: string, password: string) => {
-    const authenticatedUser = await apiFetch<AuthenticatedUser>("/auth/login", {
+    const authenticatedUser = await apiFetch<unknown>("/auth/login", {
       method: "POST",
       body: JSON.stringify({ username, password }),
     });
+
+    if (!isAuthenticatedUser(authenticatedUser)) {
+      throw new ApiError("O servidor retornou uma resposta de autenticação inválida.", 502);
+    }
+
     finishLogin(authenticatedUser);
   };
 
@@ -67,11 +88,8 @@ export default function Login() {
     try {
       await authenticate(username, senha);
     } catch (error: unknown) {
-      if (
-        error instanceof ApiError &&
-        error.status === 403 &&
-        error.message.toLowerCase().includes("first login")
-      ) {
+      // No contrato atual do backend, 403 no endpoint público de login indica primeiro acesso.
+      if (error instanceof ApiError && error.status === 403) {
         setPrimeiroAcesso(true);
         setErro("Primeiro acesso identificado. Defina sua nova senha para continuar.");
         return;
