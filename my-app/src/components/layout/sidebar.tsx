@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Users2,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const iconMap: Record<string, LucideIcon> = {
   Briefcase,
   ShieldCheck,
   Users2,
+  CalendarClock,
 };
 
 interface SidebarNavItem {
@@ -114,6 +116,12 @@ const navigation: SidebarNavSection[] = [
         label: "Alunos",
         href: "/manager/students",
         icon: "Users",
+        roles: ["MANAGER", "ADMIN"],
+      },
+      {
+        label: "Entrevistas",
+        href: "/manager/interviews",
+        icon: "CalendarClock",
         roles: ["MANAGER", "ADMIN"],
       },
     ],
@@ -202,7 +210,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
       // Requisição POST para o endpoint de logout do backend Spring Boot enviando credentials: "include"
-      await apiFetch("/api/auth/logout", {
+      await apiFetch("/auth/logout", {
         method: "POST",
       });
     } catch (error) {
