@@ -11,6 +11,36 @@ export const AUTH_COOKIE_NAME = "JWT";
 export const ROLE_COOKIE_NAME = "userRole";
 
 /**
+ * Checks only whether a JWT has a valid shape and has not expired.
+ * This is used exclusively for frontend routing; the backend remains
+ * responsible for validating the token signature and authorization.
+ */
+export function isJwtFresh(token?: string | null): boolean {
+  if (!token) return false;
+
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+
+    const normalizedPayload = parts[1]
+      .replace(/-/g, "+")
+      .replace(/_/g, "/")
+      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
+    const payload: unknown = JSON.parse(atob(normalizedPayload));
+
+    return (
+      typeof payload === "object" &&
+      payload !== null &&
+      "exp" in payload &&
+      typeof payload.exp === "number" &&
+      payload.exp * 1000 > Date.now()
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Returns default initial route by role (RBAC).
  */
 export function getRedirectPathByRole(role?: UserRole | string | null): string {
