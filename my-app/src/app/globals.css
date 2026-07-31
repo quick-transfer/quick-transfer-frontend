@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -68,7 +69,7 @@
   --color-status-neutral-foreground: var(--status-neutral-foreground);
 
   /* ── Extended palette: primary scale (Navy) ── */
-  --color-primary-50: #ECF1FF; /* ── The side bar color ── */
+  --color-primary-50: #ECF1FF;
   --color-primary-100: #D5E3FF;
   --color-primary-200: #A7C8FF;
   --color-primary-300: #89ACE7;
@@ -76,8 +77,8 @@
   --color-primary-500: #5478AF;
   --color-primary-600: #3A5F94;
   --color-primary-700: #1F477B;
-  --color-primary-800: #00579D;
-  --color-primary-900: #00335C;
+  --color-primary-800: #003061;
+  --color-primary-900: #001E40;
   --color-primary-950: #000000;
 
   /* ── Extended palette: secondary scale (Cyan/Teal) ── */
