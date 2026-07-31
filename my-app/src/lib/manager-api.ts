@@ -80,6 +80,30 @@ export interface Manager {
   section: string;
 }
 
+export type ManagerSection = "IT";
+
+export interface ManagerInput {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+  section: ManagerSection;
+}
+
+export interface Coordinator {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+}
+
+export interface CoordinatorInput {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
 export interface Interview {
   id: string;
   interviewerName: string;
@@ -202,6 +226,26 @@ export function deletePlace(id: string) {
 
 export function getManagers() {
   return apiFetch<Manager[]>("/manager/find/all");
+}
+
+/**
+ * Cria um gestor. O backend protege esta rota para sessões com perfil ADMIN.
+ */
+export function createManager(input: ManagerInput) {
+  return apiFetch<Manager>("/manager/create", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Cria um coordenador. O backend protege esta rota para sessões com perfil ADMIN.
+ */
+export function createCoordinator(input: CoordinatorInput) {
+  return apiFetch<Coordinator>("/coordinator/create", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export function getInterviews() {

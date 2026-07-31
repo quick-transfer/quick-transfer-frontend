@@ -19,6 +19,18 @@ export class ApiError extends Error {
   }
 }
 
+// Mensagens estáveis impedem que detalhes internos da infraestrutura apareçam na interface.
+const HTTP_ERROR_MESSAGES: Partial<Record<number, string>> = {
+  500: "O servidor encontrou um erro interno. Tente novamente mais tarde.",
+  502: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
+  503: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
+  504: "O servidor demorou demais para responder. Tente novamente em alguns minutos.",
+};
+
+function defaultErrorMessage(status: number): string {
+  return HTTP_ERROR_MESSAGES[status] || `Erro HTTP! Status: ${status}`;
+}
+
 /**
  * Função utilitária centralizada para realizar requisições HTTP para a API Spring Boot.
  * Por padrão, define `credentials: "include"` em todas as chamadas para que o navegador
@@ -35,28 +47,44 @@ export async function apiFetch<T = unknown>(
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    // Garantindo o envio e recebimento dos cookies HttpOnly no navegador
-    credentials: "include",
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      // Garantindo o envio e recebimento dos cookies HttpOnly no navegador
+      credentials: "include",
+    });
+  } catch {
+    throw new ApiError(
+      "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      0,
+    );
+  }
 
   if (!response.ok) {
-    let errorMessage = `Erro HTTP! Status: ${response.status}`;
+    let errorMessage = defaultErrorMessage(response.status);
     try {
       const contentType = response.headers.get("content-type") || "";
-      const errorData = contentType.includes("application/json")
-        ? await response.json()
-        : await response.text();
-      if (
-        typeof errorData === "object" &&
-        errorData !== null &&
-        "message" in errorData
-      ) {
-        errorMessage = errorData.message;
-      } else if (typeof errorData === "string") {
-        errorMessage = errorData || errorMessage;
+      // A API usa { message }, mas respostas textuais curtas também são aceitas.
+      // HTML é ignorado para não exibir páginas inteiras de erro ao usuário.
+      if (contentType.includes("application/json")) {
+        const errorData: unknown = await response.json();
+        if (
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "message" in errorData &&
+          typeof errorData.message === "string" &&
+          errorData.message.trim()
+        ) {
+          errorMessage = errorData.message;
+        }
+      } else if (contentType.includes("text/plain")) {
+        const errorText = (await response.text()).trim();
+        if (errorText && errorText.length <= 500) {
+          errorMessage = errorText;
+        }
       }
     } catch {
       // Caso a resposta de erro não seja JSON
