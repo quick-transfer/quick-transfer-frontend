@@ -1,30 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import type { Manager, Place } from "@/lib/manager-api";
 
-// Vagas em aberto disponíveis para o gestor selecionar
-const openVacancies = [
-  { id: "vac-1", title: "Montador de Painéis Elétricos" },
-  { id: "vac-2", title: "Técnico de Automação Jr" },
-];
+interface InterviewFormData {
+  dateTime: string;
+  placeId: string;
+  managerId: string;
+  interviewerName: string;
+}
 
 interface InterviewSchedulingModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidateName: string;
-  vacancyTitle?: string;
-  onConfirm: (data: { date: string; time: string; notes: string; vacancyId: string }) => void;
+  vacancyTitle: string;
+  places: Place[];
+  managers: Manager[];
+  onConfirm: (data: InterviewFormData) => Promise<void>;
 }
 
 export function InterviewSchedulingModal({
@@ -32,152 +36,110 @@ export function InterviewSchedulingModal({
   onClose,
   candidateName,
   vacancyTitle,
+  places,
+  managers,
   onConfirm,
 }: InterviewSchedulingModalProps) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [notes, setNotes] = useState("");
-  const [selectedVacancyId, setSelectedVacancyId] = useState(openVacancies[0]?.id ?? "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [placeId, setPlaceId] = useState(places[0]?.id || "");
+  const [managerId, setManagerId] = useState(managers[0]?.id || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  // Data de hoje (limite mínimo)
-  const today = new Date();
-  const todayStr = today.toLocaleDateString("sv-SE");
+  const now = new Date();
+  const today = now.toLocaleDateString("sv-SE");
+  const maxDate = new Date(now);
+  maxDate.setFullYear(maxDate.getFullYear() + 1);
+  const maxDateValue = maxDate.toLocaleDateString("sv-SE");
 
-  // Exatamente 1 ano no futuro (limite máximo)
-  const maxDate = new Date();
-  maxDate.setFullYear(today.getFullYear() + 1);
-  const maxDateStr = maxDate.toLocaleDateString("sv-SE");
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validação extra garantindo o intervalo de no máximo 1 ano
-    if (date < todayStr || date > maxDateStr) {
-      alert("Selecione uma data entre hoje e no máximo 1 ano a partir de hoje.");
+    if (!date || !time || !placeId || !managerId) {
+      setError("Preencha data, horário, local e gestor.");
       return;
     }
 
-    setIsSubmitting(true);
+    const dateTime = `${date}T${time}:00`;
+    if (new Date(dateTime).getTime() <= Date.now()) {
+      setError("Selecione um horário futuro.");
+      return;
+    }
 
-    // Simula a requisição à API e notificação por e-mail ao coordenador
-    // TODO: Integrar endpoint de notificação ao coordenador responsável
-    setTimeout(() => {
-      onConfirm({ date, time, notes, vacancyId: selectedVacancyId });
-      setIsSubmitting(false);
+    const manager = managers.find((item) => item.id === managerId);
+    if (!manager) {
+      setError("Selecione um gestor válido.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await onConfirm({
+        dateTime,
+        placeId,
+        managerId,
+        interviewerName: manager.name,
+      });
+      setDate("");
+      setTime("");
       onClose();
-    }, 600);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível agendar a entrevista."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-white sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-slate-900">
-            Agendar Entrevista
-          </DialogTitle>
-          <DialogDescription className="text-xs text-slate-500">
-            Agende uma entrevista com <strong className="text-slate-800">{candidateName}</strong>. O coordenador responsável será notificado por e-mail.
+          <DialogTitle>Agendar entrevista</DialogTitle>
+          <DialogDescription>
+            Entrevista de <strong>{candidateName}</strong> para <strong>{vacancyTitle}</strong>.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          {/* Seleção de Vaga em Aberto */}
-          <div className="space-y-1.5">
-            <Label htmlFor="interview-vacancy" className="text-xs font-semibold text-slate-700">
-              Vaga em Aberto
-            </Label>
-            {vacancyTitle ? (
-              <div className="h-10 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 font-medium">
-                {vacancyTitle}
-              </div>
-            ) : (
-              <select
-                id="interview-vacancy"
-                value={selectedVacancyId}
-                onChange={(e) => setSelectedVacancyId(e.target.value)}
-                required
-                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {openVacancies.map((v) => (
-                  <option key={v.id} value={v.id}>{v.title}</option>
-                ))}
-              </select>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label
-                htmlFor="interview-date"
-                className="text-xs font-semibold text-slate-700"
-              >
-                Data
-              </Label>
-              <Input
-                id="interview-date"
-                type="date"
-                required
-                min={todayStr}    // Bloqueia datas anteriores a hoje
-                max={maxDateStr}  // Bloqueia datas além de 1 ano
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-10 text-sm bg-white border-slate-200"
-              />
+              <Label htmlFor="interview-date">Data</Label>
+              <Input id="interview-date" type="date" min={today} max={maxDateValue} value={date} onChange={(event) => setDate(event.target.value)} required />
             </div>
-
             <div className="space-y-1.5">
-              <Label
-                htmlFor="interview-time"
-                className="text-xs font-semibold text-slate-700"
-              >
-                Horário
-              </Label>
-              <Input
-                id="interview-time"
-                type="time"
-                required
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="h-10 text-sm bg-white border-slate-200"
-              />
+              <Label htmlFor="interview-time">Horário</Label>
+              <Input id="interview-time" type="time" value={time} onChange={(event) => setTime(event.target.value)} required />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label
-              htmlFor="interview-notes"
-              className="text-xs font-semibold text-slate-700"
-            >
-              Observações / Pauta
-            </Label>
-            <textarea
-              id="interview-notes"
-              rows={3}
-              placeholder="Adicione informações adicionais para o coordenador ou candidato..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-2.5 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+            <Label htmlFor="interview-place">Local</Label>
+            <select id="interview-place" value={placeId} onChange={(event) => setPlaceId(event.target.value)} required className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+              <option value="">Selecione um local</option>
+              {places.map((place) => <option key={place.id} value={place.id}>{place.placeName} · {place.park} · {place.section}</option>)}
+            </select>
           </div>
 
-          <DialogFooter className="pt-2 gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="border-slate-200 text-slate-700 hover:bg-slate-100"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-primary-900 text-white hover:bg-primary-950"
-            >
-              {isSubmitting
-                ? "Agendando..."
-                : "Confirmar e Notificar Coordenador"}
+          <div className="space-y-1.5">
+            <Label htmlFor="interview-manager">Gestor responsável</Label>
+            <select id="interview-manager" value={managerId} onChange={(event) => setManagerId(event.target.value)} required className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+              <option value="">Selecione um gestor</option>
+              {managers.map((manager) => <option key={manager.id} value={manager.id}>{manager.name} · {manager.section}</option>)}
+            </select>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="submit" disabled={submitting || places.length === 0 || managers.length === 0} className="bg-primary-900 text-white">
+              {submitting ? "Agendando..." : "Confirmar e enviar convite"}
             </Button>
           </DialogFooter>
         </form>
@@ -185,4 +147,3 @@ export function InterviewSchedulingModal({
     </Dialog>
   );
 }
-
