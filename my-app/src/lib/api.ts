@@ -12,6 +12,7 @@ export class ApiError extends Error {
   }
 }
 
+// Mensagens estáveis impedem que detalhes internos da infraestrutura apareçam na interface.
 const HTTP_ERROR_MESSAGES: Partial<Record<number, string>> = {
   500: "O servidor encontrou um erro interno. Tente novamente mais tarde.",
   502: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
@@ -23,6 +24,11 @@ function defaultErrorMessage(status: number): string {
   return HTTP_ERROR_MESSAGES[status] || `Erro HTTP! Status: ${status}`;
 }
 
+/**
+ * Função utilitária centralizada para realizar requisições HTTP para a API Spring Boot.
+ * Por padrão, define `credentials: "include"` em todas as chamadas para que o navegador
+ * envie e receba cookies com a flag HttpOnly.
+ */
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options: RequestInit = {}
@@ -40,6 +46,7 @@ export async function apiFetch<T = unknown>(
     response = await fetch(url, {
       ...options,
       headers,
+      // Garantindo o envio e recebimento dos cookies HttpOnly no navegador
       credentials: "include",
     });
   } catch {
@@ -53,6 +60,8 @@ export async function apiFetch<T = unknown>(
     let errorMessage = defaultErrorMessage(response.status);
     try {
       const contentType = response.headers.get("content-type") || "";
+      // A API usa { message }, mas respostas textuais curtas também são aceitas.
+      // HTML é ignorado para não exibir páginas inteiras de erro ao usuário.
       if (contentType.includes("application/json")) {
         const errorData: unknown = await response.json();
         if (
