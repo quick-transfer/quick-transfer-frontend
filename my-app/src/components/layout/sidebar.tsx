@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Users2,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const iconMap: Record<string, LucideIcon> = {
   Briefcase,
   ShieldCheck,
   Users2,
+  CalendarClock,
 };
 
 interface SidebarNavItem {
@@ -114,6 +116,12 @@ const navigation: SidebarNavSection[] = [
         label: "Alunos",
         href: "/manager/students",
         icon: "Users",
+        roles: ["MANAGER", "ADMIN"],
+      },
+      {
+        label: "Entrevistas",
+        href: "/manager/interviews",
+        icon: "CalendarClock",
         roles: ["MANAGER", "ADMIN"],
       },
     ],
