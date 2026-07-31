@@ -189,7 +189,8 @@ export default function VagasPage() {
           actions={
             <Button
               className="gap-2 bg-primary text-white hover:bg-primary-700"
-              onClick={openNew}
+              // The manager form provides all fields required by the API.
+              onClick={() => window.location.assign(`/manager/vacancies/new`)}
             >
               <Plus className="size-4" /> Nova Vaga
             </Button>
