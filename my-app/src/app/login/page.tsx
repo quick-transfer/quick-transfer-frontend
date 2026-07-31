@@ -181,7 +181,7 @@ export default function Login() {
           />
         </div>
 
-        <div className="w-full max-w-md rounded-xl bg-card p-8 shadow-2xl">
+        <div className="w-full max-w-md rounded-xl bg-card px-8 py-13 shadow-2xl">
           <h1 className="text-center text-[32px] font-semibold text-card-foreground">
             {primeiroAcesso ? "Primeiro acesso" : "Login"}
           </h1>
@@ -217,7 +217,7 @@ export default function Login() {
                 onChange={(event) => setUsuario(event.target.value)}
                 required
                 disabled={primeiroAcesso || carregando}
-                className="w-full rounded-xl border border-primary-600 bg-background px-4 py-5 text-[16px] font-medium outline-none transition focus:border-primary-800 focus:bg-accent"
+                className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
               />
             </div>
 
@@ -238,7 +238,7 @@ export default function Login() {
                   onChange={(event) => setSenha(event.target.value)}
                   required
                   disabled={carregando}
-                  className="w-full rounded-xl border border-primary-600 bg-background px-4 py-5 text-[16px] font-medium outline-none transition focus:border-primary-800 focus:bg-accent"
+                  className="w-full mb-5 text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
                 />
               </div>
             )}
