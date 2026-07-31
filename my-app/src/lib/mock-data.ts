@@ -27,13 +27,6 @@ export const mockUsers: UserDTO[] = [
     active: true,
   },
   {
-    id: "usr-3",
-    name: "Mariana Costa",
-    email: "mariana.costa@weg.net",
-    role: "MANAGER",
-    active: true,
-  },
-  {
     id: "usr-4",
     name: "Lucas Oliveira",
     email: "lucas.oliveira@weg.net",
