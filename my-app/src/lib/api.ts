@@ -1,5 +1,11 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
-export const AUTH_COOKIE_NAME = "authToken";
+/**
+ * Usa o proxy do Next por padrão para evitar CORS e não expor o endereço do backend.
+ * A URL ainda pode ser sobrescrita em ambientes que forneçam NEXT_PUBLIC_API_URL.
+ */
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
+
+/** Nome do cookie HttpOnly emitido pelo backend após a autenticação. */
+export const AUTH_COOKIE_NAME = "JWT";
 
 // 1. Criando a classe ApiError
 export class ApiError extends Error {
