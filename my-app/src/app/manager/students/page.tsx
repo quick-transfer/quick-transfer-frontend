@@ -1,94 +1,106 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { Eye, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { buttonVariants } from "@/components/ui/button";
+import { mockStudents } from "@/lib/mock-data";
+import type { StudentDTO } from "@/types";
+import Link from "next/link";
+import { Eye, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  getStudents,
-  interviewStatusLabels,
-  type Student,
-} from "@/lib/manager-api";
-
-function interviewBadgeVariant(status: string) {
-  if (status === "HIRED") return "success" as const;
-  if (status === "DISAPPROVED" || status === "DISCARDED") return "danger" as const;
-  if (status === "NOT_SEEN" || status === "NOT_ASSOCIATED") return "warning" as const;
-  return "info" as const;
-}
 
 export default function ManagerStudentsPage() {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [assignedStudents, setAssignedStudents] = useState<Record<string, string>>({
+    "std-1": "Analista de Dados Sênior",
+  });
 
-  const loadStudents = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      setStudents(await getStudents());
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar os alunos.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-    getStudents()
-      .then((data) => active && setStudents(data))
-      .catch((requestError) => {
-        if (active) setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar os alunos.");
-      })
-      .finally(() => active && setLoading(false));
-    return () => { active = false; };
-  }, []);
-
-  const columns: DataTableColumn<Student>[] = [
+  const columns: DataTableColumn<StudentDTO>[] = [
     {
       key: "name",
       header: "Aluno",
       sortable: true,
-      render: (student) => (
-        <div className="flex items-center gap-3">
-          <Avatar className="size-9 border border-slate-200">
-            <AvatarFallback className="bg-primary-800 text-xs font-bold text-white">{student.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-bold text-slate-900">{student.name}</p>
-            <p className="text-xs text-slate-500">{student.email}</p>
+      render: (student) => {
+        const initials = student.name
+          .split(" ")
+          .map((n) => n[0])
+          .slice(0, 2)
+          .join("");
+        const isAssigned = Boolean(assignedStudents[student.id]);
+
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="size-9 border border-slate-200">
+              <AvatarImage src={`https://i.pravatar.cc/150?u=${student.name}`} alt={student.name} />
+              <AvatarFallback className="bg-primary-800 text-white font-bold text-xs">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-slate-900">{student.name}</p>
+                {isAssigned && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    <UserCheck className="size-3" /> Na Vaga: {assignedStudents[student.id]}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500">Matrícula: {student.registration}</p>
+            </div>
           </div>
+        );
+      },
+    },
+    {
+      key: "courseName",
+      header: "Curso / Turma",
+      render: (student) => (
+        <div>
+          <p className="font-semibold text-slate-900">{student.courseName}</p>
+          <p className="text-xs text-slate-500">{student.className}</p>
         </div>
       ),
     },
     {
-      key: "course",
-      header: "Curso / Turma",
-      sortable: true,
-      render: (student) => <div><p className="font-semibold text-slate-900">{student.course}</p><p className="text-xs text-slate-500">{student.acronym}</p></div>,
+      key: "shift",
+      header: "Turno",
+      render: (student) => (
+        <span className="text-sm font-medium text-slate-700">{student.shift}</span>
+      ),
     },
     {
-      key: "averageGrade",
-      header: "Média",
+      key: "attendanceRate",
+      header: "Frequência",
       sortable: true,
-      render: (student) => <span className="font-bold text-slate-900">{student.averageGrade?.toLocaleString("pt-BR", { minimumFractionDigits: 1 }) ?? "—"}</span>,
+      render: (student) => (
+        <span className="text-sm font-bold text-slate-900">{student.attendanceRate}%</span>
+      ),
     },
     {
-      key: "statusStudentInterview",
-      header: "Seleção",
-      render: (student) => <Badge variant={interviewBadgeVariant(student.statusStudentInterview)}>{interviewStatusLabels[student.statusStudentInterview] || student.statusStudentInterview}</Badge>,
+      key: "status",
+      header: "Status",
+      render: (student) => {
+        if (assignedStudents[student.id]) {
+          return <Badge variant="success">Alocado em Vaga</Badge>;
+        }
+        if (student.status === "ACTIVE") return <Badge variant="info">Disponível</Badge>;
+        return <Badge variant="warning">Em Análise</Badge>;
+      },
     },
     {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: (student) => <Link href={`/manager/students/${student.id}`} className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}><Eye className="size-3.5" /> Ver perfil</Link>,
+      render: (student) => (
+        <Link
+          href={`/manager/students/${student.id}`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-100")}
+        >
+          <Eye className="size-3.5" /> Ver Perfil
+        </Link>
+      ),
     },
   ];
 
@@ -96,28 +108,20 @@ export default function ManagerStudentsPage() {
     <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Alunos" }]}>
       <div className="space-y-6">
         <PageHeader
-          title="Diretório de alunos"
-          description="Consulte dados acadêmicos, habilidades e situação no processo seletivo"
-          actions={<Button variant="outline" onClick={() => void loadStudents()} disabled={loading}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Atualizar</Button>}
+          title="Diretório de Alunos Aprendizes"
+          description="Pesquise e consulte o perfil técnico e a disponibilidade de alunos candidatos às vagas"
         />
 
-        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
-
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          {loading ? (
-            <div className="py-12 text-center text-sm text-slate-500">Carregando alunos...</div>
-          ) : (
-            <DataTable
-              columns={columns}
-              data={students}
-              searchable
-              searchPlaceholder="Pesquisar por nome, e-mail, curso ou turma..."
-              searchKeys={["name", "email", "course", "acronym"]}
-              emptyTitle="Nenhum aluno encontrado"
-              pageSize={10}
-              getRowKey={(row) => row.id}
-            />
-          )}
+        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+          <DataTable
+            columns={columns}
+            data={mockStudents}
+            searchable
+            searchPlaceholder="Pesquisar aluno por nome, matrícula ou curso..."
+            searchKeys={["name", "registration", "courseName"]}
+            pageSize={10}
+            getRowKey={(row) => row.id}
+          />
         </div>
       </div>
     </AppShell>
