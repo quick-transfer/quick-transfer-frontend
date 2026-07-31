@@ -12,6 +12,9 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Quick Transfer",
   description: "Sistema de gerenciamento de turnos, turmas e alunos",
+  icons: {
+    icon: '/assets/images/logo/logo-weg.png', // Caminho a partir da pasta public/
+  },
 };
 
 export default function RootLayout({
