@@ -5,7 +5,7 @@ import { Topbar, type BreadcrumbSegment } from "@/components/layout/topbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 import type { UserRole } from "@/types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 function normalizeRole(roleStr?: string | null): UserRole {
   if (!roleStr) return "ADMIN";
@@ -28,7 +28,11 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
-  const [role] = useState<UserRole>(() => getRoleFromCookie());
+  const [role, setRole] = useState<UserRole>("ADMIN");
+
+  useEffect(() => {
+    setRole(getRoleFromCookie());
+  }, []);
 
   const roleLabels: Record<UserRole, string> = {
     ADMIN: "Administrador",
