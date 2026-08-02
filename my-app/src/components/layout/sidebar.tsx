@@ -141,36 +141,36 @@ const navigation: SidebarNavSection[] = [
         icon: "Users",
         roles: ["ADMIN"],
       },
-      {
-        label: "Gestores",
-        href: "/admin/sections",
-        icon: "Briefcase",
-        roles: ["ADMIN"],
-      },
+      // {
+      //   label: "Gestores",
+      //   href: "/admin/sections",
+      //   icon: "Briefcase",
+      //   roles: ["ADMIN"],
+      // },
       {
         label: "Locais",
         href: "/admin/locations",
         icon: "MapPin",
         roles: ["ADMIN"],
       },
-      {
-        label: "Entrevistas",
-        href: "/admin/interviews",
-        icon: "CalendarCheck",
-        roles: ["ADMIN"],
-      },
+      // {
+      //   label: "Entrevistas",
+      //   href: "/admin/interviews",
+      //   icon: "CalendarCheck",
+      //   roles: ["ADMIN"],
+      // },
       {
         label: "Cursos",
         href: "/admin/courses",
         icon: "BookOpen",
         roles: ["ADMIN"],
       },
-      {
-        label: "Turmas",
-        href: "/admin/classes",
-        icon: "GraduationCap",
-        roles: ["ADMIN"],
-      },
+      // {
+      //   label: "Turmas",
+      //   href: "/admin/classes",
+      //   icon: "GraduationCap",
+      //   roles: ["ADMIN"],
+      // },
       {
         label: "Vagas",
         href: "/admin/vacancies",
@@ -290,7 +290,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      <Separator data-no-autosize className="bg-primary-800" style={{  width: '90%', marginLeft: '5%' }} />
+      <Separator data-no-autosize className="bg-primary-800" style={{ width: '90%', marginLeft: '5%' }} />
 
       {/* Footer */}
       <div className="p-4">
