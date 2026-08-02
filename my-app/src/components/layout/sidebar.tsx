@@ -142,33 +142,15 @@ const navigation: SidebarNavSection[] = [
         roles: ["ADMIN"],
       },
       {
-        label: "Gestores",
-        href: "/admin/sections",
-        icon: "Briefcase",
-        roles: ["ADMIN"],
-      },
-      {
         label: "Locais",
         href: "/admin/locations",
         icon: "MapPin",
         roles: ["ADMIN"],
       },
       {
-        label: "Entrevistas",
-        href: "/admin/interviews",
-        icon: "CalendarCheck",
-        roles: ["ADMIN"],
-      },
-      {
         label: "Cursos",
         href: "/admin/courses",
         icon: "BookOpen",
-        roles: ["ADMIN"],
-      },
-      {
-        label: "Turmas",
-        href: "/admin/classes",
-        icon: "GraduationCap",
         roles: ["ADMIN"],
       },
       {

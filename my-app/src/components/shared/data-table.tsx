@@ -143,19 +143,19 @@ export function DataTable<T extends Record<string, any>>({
       )}
 
       {/* Table */}
-      <div className="rounded-lg shadow-[0_5px_7px_4px_rgba(0,0,0,0.2)] overflow-hidden">
+      <div className="rounded-lg shadow-primary-900 shadow-sm overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-neutral-100 hover:bg-neutral-100">
+            <TableRow className="bg-primary-900 hover:bg-primary-900">
               {columns.map((col) => (
                 <TableHead
-                  className={cn("text-xs font-semibold tracking-wider text-primary-700 px-6", col.className)}
+                  className={cn("text-xs font-semibold tracking-wider text-white px-6", col.className)}
                   key={col.key}
                 >
                   {col.sortable ? (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5"
                       onClick={() => handleSort(col.key)}
                       aria-label={`Ordenar por ${col.header}`}
                     >
