@@ -75,7 +75,7 @@ function Separator({
 
   const updateWidth = useCallback(() => {
     const el = ref.current
-    if (!el || orientation !== "horizontal") return
+    if (!el || orientation !== "horizontal" || el.hasAttribute("data-no-autosize")) return
 
     const prevSibling = el.previousElementSibling as HTMLElement | null
     if (!prevSibling) return
@@ -96,7 +96,7 @@ function Separator({
 
   useLayoutEffect(() => {
     const el = ref.current
-    if (!el || orientation !== "horizontal") return
+    if (!el || orientation !== "horizontal" || el.hasAttribute("data-no-autosize")) return
 
     // Initial calculation
     updateWidth()
@@ -121,7 +121,7 @@ function Separator({
       data-slot="separator"
       orientation={orientation}
       className={cn(
-        "shrink-0 bg-border data-horizontal:h-px data-vertical:w-px data-vertical:self-stretch",
+        "shrink-0 bg-border data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-px data-[orientation=vertical]:h-full data-[orientation=vertical]:self-stretch",
         className
       )}
       {...props}
