@@ -5,6 +5,7 @@ import { Topbar, type BreadcrumbSegment } from "@/components/layout/topbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 import type { UserRole } from "@/types";
+import { Separator } from "@base-ui/react/separator";
 import { useEffect, useState } from "react";
 
 function normalizeRole(roleStr?: string | null): UserRole {
@@ -47,6 +48,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
         <Sidebar currentRole={role} />
         <div className="lg:pl-60 flex min-h-screen flex-col">
           <Topbar breadcrumbs={breadcrumbs} userName={roleLabels[role] || "Usuário"} />
+          <Separator className="bg-primary-800 h-px" style={{ width: '93%', marginLeft: '1.7%', marginRight: '5%' }}/>
           <main className="flex-1 p-6 pr-[5vw]">{children}</main>
         </div>
       </div>
