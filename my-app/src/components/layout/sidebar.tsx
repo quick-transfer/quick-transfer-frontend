@@ -246,7 +246,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         />
       </div>
 
-      <Separator data-no-autosize className="bg-primary-800 w-2/10" style={{ width: '100%', marginLeft: 0 }} />
+      <Separator className="bg-primary-800" style={{ width: '90%', marginLeft: '10%' }} />
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
@@ -290,7 +290,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      <Separator data-no-autosize className="bg-primary-800 w-full" style={{ width: '100%', marginLeft: 0 }} />
+      <Separator data-no-autosize className="bg-primary-800" style={{  width: '90%', marginLeft: '5%' }} />
 
       {/* Footer */}
       <div className="p-4">
