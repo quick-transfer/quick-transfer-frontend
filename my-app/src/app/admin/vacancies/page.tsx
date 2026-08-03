@@ -104,9 +104,6 @@ export default function VagasPage() {
       sortable: true,
       render: (vac) => (
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
-            <Briefcase className="size-4" />
-          </div>
           <div>
             <p className="font-medium text-foreground">{vac.title}</p>
             <p className="text-xs text-muted-foreground">{vac.department}</p>
