@@ -108,9 +108,6 @@ export default function CursosAdminPage() {
       sortable: true,
       render: (course) => (
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
-            <BookOpen className="size-4" />
-          </div>
           <div>
             <p className="font-medium text-foreground">{course.name}</p>
             <p className="text-xs text-muted-foreground">Código: {course.code}</p>
