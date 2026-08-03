@@ -72,7 +72,7 @@ export default function LocaisPage() {
           title="Gerenciar Locais Fabris"
           description="Unidades de produção e centros de formação integrados ao sistema"
           actions={
-            <Button className="gap-2 bg-primary text-white hover:bg-primary-700">
+            <Button className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700">
               <Plus className="size-4" /> Novo Local
             </Button>
           }

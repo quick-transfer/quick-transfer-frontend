@@ -185,7 +185,7 @@ export default function VagasPage() {
           description="Abertura e controle de vagas para estagiários e aprendizes nas unidades"
           actions={
             <Button
-              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700"
               onClick={openNew}
             >
               <Plus className="size-4" /> Nova Vaga

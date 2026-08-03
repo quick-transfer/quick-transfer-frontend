@@ -179,14 +179,14 @@ export default function CursosAdminPage() {
           title="Cursos Técnicos e Profissionalizantes"
           description="Catálogo de programas de qualificação técnica oferecidos na unidade"
           actions={
-            <Button className="gap-2 bg-primary text-white hover:bg-primary-700" onClick={openNew}>
+            <Button className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700" onClick={openNew}>
               <Plus className="size-4" /> Novo Curso
             </Button>
           }
         />
 
         <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-muted p-1">
+          <TabsList className="bg-white p-1 shadow-primary-900 shadow-sm">
             <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
             <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
             <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
