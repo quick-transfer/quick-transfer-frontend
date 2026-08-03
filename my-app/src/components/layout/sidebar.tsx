@@ -69,37 +69,37 @@ const navigation: SidebarNavSection[] = [
         label: "Painel",
         href: "/dashboard",
         icon: "LayoutDashboard",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Turnos",
         href: "/shifts",
         icon: "Clock",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Turmas",
         href: "/classes",
         icon: "GraduationCap",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Alunos",
         href: "/students",
         icon: "Users",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Cursos",
         href: "/courses",
         icon: "BookOpen",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Direcionar Alunos",
         href: "/coordinator/direct",
         icon: "Users2",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
     ],
   },
@@ -110,19 +110,19 @@ const navigation: SidebarNavSection[] = [
         label: "Minhas Vagas",
         href: "/manager/vacancies",
         icon: "Briefcase",
-        roles: ["MANAGER", "ADMIN"],
+        roles: ["MANAGER"],
       },
       {
         label: "Alunos",
         href: "/manager/students",
         icon: "Users",
-        roles: ["MANAGER", "ADMIN"],
+        roles: ["MANAGER"],
       },
       {
         label: "Entrevistas",
         href: "/manager/interviews",
         icon: "CalendarClock",
-        roles: ["MANAGER", "ADMIN"],
+        roles: ["MANAGER"],
       },
     ],
   },
@@ -186,7 +186,6 @@ function normalizeRole(roleStr?: UserRole | string | null): UserRole {
   const upper = roleStr.toUpperCase();
   if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
   if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
-  if (upper === "STUDENT" || upper === "ALUNO") return "STUDENT";
   return "ADMIN";
 }
 
@@ -247,14 +246,14 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         />
       </div>
 
-      <Separator data-no-autosize className="bg-primary-900 w-full" style={{ width: '100%', marginLeft: 0 }} />
+      <Separator className="bg-primary-800" style={{ width: '90%', marginLeft: '10%' }} />
 
       {/* Navigation */}
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-6">
           {filteredNav.map((section) => (
             <div key={section.title}>
-              <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-primary-900">
+              <p className="mb-2 px-3 text-[14px] font-semibold uppercase tracking-wider text-primary-900">
                 {section.title}
               </p>
               <Separator className="bg-primary-900 mb-2" />
@@ -291,7 +290,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         </nav>
       </ScrollArea>
 
-      <Separator data-no-autosize className="bg-primary-900 w-full" style={{ width: '100%', marginLeft: 0 }} />
+      <Separator data-no-autosize className="bg-primary-800" style={{  width: '90%', marginLeft: '5%' }} />
 
       {/* Footer */}
       <div className="p-4">
