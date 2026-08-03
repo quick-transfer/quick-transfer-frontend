@@ -162,6 +162,7 @@ export default function ManagerInterviewsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
+                className={'px-4 py-5'}
                 onClick={() => void loadData()}
                 disabled={loading}
               >
@@ -174,7 +175,7 @@ export default function ManagerInterviewsPage() {
                 href="/manager/vacancies"
                 className={cn(
                   buttonVariants(),
-                  "gap-2 bg-primary-900 text-white"
+                  "gap-2 bg-primary-900 text-white px-4 py-5"
                 )}
               >
                 <Plus className="size-4" />
