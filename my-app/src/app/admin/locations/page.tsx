@@ -16,9 +16,6 @@ export default function LocaisPage() {
       sortable: true,
       render: (place) => (
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
-            <MapPin className="size-4" />
-          </div>
           <div>
             <p className="font-medium text-foreground">{place.name}</p>
             <p className="text-xs text-muted-foreground">{place.description}</p>
