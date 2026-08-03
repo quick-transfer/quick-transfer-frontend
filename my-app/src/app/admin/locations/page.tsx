@@ -16,9 +16,6 @@ export default function LocaisPage() {
       sortable: true,
       render: (place) => (
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
-            <MapPin className="size-4" />
-          </div>
           <div>
             <p className="font-medium text-foreground">{place.name}</p>
             <p className="text-xs text-muted-foreground">{place.description}</p>
@@ -75,7 +72,7 @@ export default function LocaisPage() {
           title="Gerenciar Locais Fabris"
           description="Unidades de produção e centros de formação integrados ao sistema"
           actions={
-            <Button className="gap-2 bg-primary text-white hover:bg-primary-700">
+            <Button className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700">
               <Plus className="size-4" /> Novo Local
             </Button>
           }

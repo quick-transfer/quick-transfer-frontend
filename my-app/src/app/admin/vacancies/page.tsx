@@ -104,9 +104,6 @@ export default function VagasPage() {
       sortable: true,
       render: (vac) => (
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary-50 text-primary-600">
-            <Briefcase className="size-4" />
-          </div>
           <div>
             <p className="font-medium text-foreground">{vac.title}</p>
             <p className="text-xs text-muted-foreground">{vac.department}</p>
@@ -188,7 +185,7 @@ export default function VagasPage() {
           description="Abertura e controle de vagas para estagiários e aprendizes nas unidades"
           actions={
             <Button
-              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700"
               onClick={openNew}
             >
               <Plus className="size-4" /> Nova Vaga
