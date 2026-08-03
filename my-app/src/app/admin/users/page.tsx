@@ -204,11 +204,6 @@ export default function UsuariosPage() {
           .join("");
         return (
           <div className="flex items-center gap-3">
-            <Avatar className="size-8">
-              <AvatarFallback className="bg-primary-600 text-xs font-semibold text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
             <div>
               <p className="font-medium text-foreground">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
@@ -222,7 +217,6 @@ export default function UsuariosPage() {
       header: "Papel / Função",
       sortable: true,
       render: (user) => {
-        if (user.role === "ADMIN") return <Badge variant="danger">Administrador</Badge>;
         if (user.role === "COORDINATOR") return <Badge variant="info">Coordenador</Badge>;
         if (user.role === "MANAGER") return <Badge variant="warning">Gestor / Supervisor</Badge>;
         return <Badge variant="neutral">Aluno</Badge>;
@@ -274,7 +268,7 @@ export default function UsuariosPage() {
           actions={
             <Button
               onClick={openCreateDialog}
-              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              className="gap-2 px-4 py-5 bg-primary text-white hover:bg-primary-700"
             >
               <UserPlus className="size-4" /> Criar usuário
             </Button>
