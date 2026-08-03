@@ -19,8 +19,8 @@ Cor dominante usada na sidebar, background do login, botões primários e cabeç
 | `primary-400`    | `#6E92CA`   | Links hover, ícones secundários                      |
 | `primary-500`    | `#5478AF`   | Links ativos, ícones de ação                         |
 | `primary-600`    | `#3A5F94`   | Botões secundários, estados ativos                   |
-| `primary-700`    | `#1F477B`   | Hover de botões primários                            |
-| `primary-800`    | `#003061`   | Botões primários, sidebar ativa                      |
+| `primary-700`    | `#00579D`   | Hover de botões primários                            |
+| `primary-800`    | `#00335C`   | Botões primários, sidebar ativa                      |
 | `primary-900`    | `#001E40`   | Background do botão da sidebar, sidebar background   |
 | `primary-950`    | `#000000`   | Background mais profundo                             |
 
