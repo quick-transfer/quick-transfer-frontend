@@ -26,9 +26,13 @@ type AuthenticatedUser = {
   role: UserRole;
 };
 
+// Password policy enforced by the backend on /auth/first-access.
+// Duplicated here to give immediate feedback without a round-trip.
 const PASSWORD_REQUIREMENTS =
   "A nova senha deve ter ao menos 14 caracteres, uma letra maiúscula, um número e um caractere especial.";
 
+// Maps ApiError status codes to user-friendly messages.
+// 401 and 404 are intentionally vague to avoid user enumeration.
 function friendlyLoginError(error: unknown) {
   if (!(error instanceof Error)) {
     return "Erro inesperado ao realizar o login. Tente novamente.";
@@ -37,6 +41,7 @@ function friendlyLoginError(error: unknown) {
   if (error instanceof ApiError) {
     if (error.status === 401) return "Usuário ou senha inválidos.";
     if (error.status === 404) return "Usuário não encontrado.";
+    // Status 0 or 5xx means a network/server failure — the ApiError already has a good message.
     if (error.status === 0 || error.status >= 500) return error.message;
   }
 
@@ -47,7 +52,9 @@ function friendlyLoginError(error: unknown) {
   return error.message || "Não foi possível realizar o login.";
 }
 
-// Valida a resposta em tempo de execução antes de gravar cookies e redirecionar.
+// Runtime shape check before writing cookies and redirecting.
+// The backend contract is informal — the response could change without a
+// type-safe client being generated; this guards against silent breakage.
 function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
   if (typeof value !== "object" || value === null) return false;
 
@@ -77,14 +84,19 @@ export default function Login() {
     mockSessionToken?: string
   ) => {
     const secure = window.location.protocol === "https:" ? "; secure" : "";
+    // Role cookie must be JS-readable (no HttpOnly) so client components can
+    // read it to render role-specific UI without a server round-trip.
     document.cookie = `${ROLE_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.role)}; path=/; max-age=86400; samesite=strict${secure}`;
 
-    // O backend grava seu JWT HttpOnly no login real. Somente o modo mock precisa
-    // criar o cookie de sessão no navegador para atravessar o middleware do Next.
+    // In a real login the backend sets the HttpOnly JWT cookie itself in the
+    // Set-Cookie response header. Only the mock path needs to set it client-side.
     if (mockSessionToken) {
+      // 8h (28800s) matches the mock token TTL set in createMockSessionToken.
       document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(mockSessionToken)}; path=/; max-age=28800; samesite=strict${secure}`;
     }
 
+    // router.replace keeps the login page out of browser history so the back
+    // button doesn't return users to the login form after signing in.
     router.replace(getRedirectPathByRole(authenticatedUser.role));
     router.refresh();
   };
@@ -105,8 +117,8 @@ export default function Login() {
   const handleLogin = async () => {
     const username = usuario.trim();
 
-    // O nome reservado do usuário mock evita esperar o timeout de uma API fora do ar.
-    // Usuários reais continuam sempre passando pelo endpoint oficial de autenticação.
+    // The mock username is checked first to skip the API entirely — avoids
+    // waiting for a timeout when the backend is down during development.
     if (IS_MOCK_AUTH_ENABLED && username === MOCK_AUTH_CREDENTIALS.username) {
       const mockUser = authenticateMockUser(username, senha);
 
@@ -122,7 +134,9 @@ export default function Login() {
     try {
       await authenticate(username, senha);
     } catch (error: unknown) {
-      // No contrato atual do backend, 403 no endpoint público de login indica primeiro acesso.
+      // Per the current backend contract, 403 on the public login endpoint
+      // means "valid credentials but first access — you must set a password."
+      // This is an unusual use of 403 but is intentional on the backend side.
       if (error instanceof ApiError && error.status === 403) {
         setPrimeiroAcesso(true);
         setErro("Primeiro acesso identificado. Defina sua nova senha para continuar.");
@@ -139,6 +153,8 @@ export default function Login() {
       return;
     }
 
+    // Client-side validation mirrors the backend's password policy to give
+    // instant feedback — the backend still validates independently.
     const passwordIsValid =
       novaSenha.length >= 14 &&
       /[A-Z]/.test(novaSenha) &&
@@ -161,6 +177,7 @@ export default function Login() {
           newPassword: novaSenha,
         }),
       });
+      // Immediately log in with the new password — avoids a second manual login.
       await authenticate(username, novaSenha);
     } catch (error: unknown) {
       setErro(friendlyLoginError(error));
@@ -179,6 +196,8 @@ export default function Login() {
         await handleLogin();
       }
     } finally {
+      // Always clear loading state, even if navigation is in progress —
+      // prevents the button from staying disabled if the redirect is slow.
       setCarregando(false);
     }
   };
@@ -193,6 +212,8 @@ export default function Login() {
 
   return (
     <main className="flex h-screen font-sans">
+      {/* Decorative full-bleed background image — hidden on mobile to give the
+          login form more space. aria-hidden via empty alt. */}
       <section className="relative hidden h-screen lg:block lg:w-3/5">
         <Image
           src="/assets/images/login/WEG-login-page.jpg"
@@ -224,6 +245,8 @@ export default function Login() {
           {erro && (
             <div
               className={`mb-4 rounded-lg border p-3 text-center text-sm font-medium ${
+                // Show the first-access message in a neutral info style rather
+                // than the red danger style to avoid alarming the user.
                 primeiroAcesso && erro.startsWith("Primeiro acesso")
                   ? "border-primary-300 bg-primary-50 text-primary-800"
                   : "border-status-danger-foreground/20 bg-status-danger text-status-danger-foreground"
@@ -233,6 +256,8 @@ export default function Login() {
             </div>
           )}
 
+          {/* Mock auth hint — only shown in non-production environments where
+              IS_MOCK_AUTH_ENABLED is true, to guide developers. */}
           {IS_MOCK_AUTH_ENABLED && !primeiroAcesso && (
             <div className="mb-4 rounded-lg border border-status-warning-foreground/20 bg-status-warning p-3 text-sm text-status-warning-foreground">
               <p className="font-semibold">Acesso de contingência</p>
@@ -264,6 +289,7 @@ export default function Login() {
                 value={usuario}
                 onChange={(event) => setUsuario(event.target.value)}
                 required
+                // Locked during first-access flow — username was already accepted.
                 disabled={primeiroAcesso || carregando}
                 className="w-full text-[16px] font-medium rounded-xl border border-primary-600 bg-background px-4 py-5 outline-none transition focus:border-primary-800 focus:bg-accent"
               />
