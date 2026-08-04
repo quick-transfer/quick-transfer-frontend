@@ -8,6 +8,9 @@ import {
   ROLE_COOKIE_NAME,
 } from "@/lib/auth";
 
+// Both cookies are always deleted together — leaving a stale role cookie
+// without a session token would cause the sidebar to render the wrong nav
+// on the next visit before the middleware runs.
 function redirectToLogin(request: NextRequest) {
   const response = NextResponse.redirect(new URL("/login", request.url));
   response.cookies.delete(AUTH_COOKIE_NAME);
@@ -16,21 +19,30 @@ function redirectToLogin(request: NextRequest) {
 }
 
 /**
- * Middleware de Proteção de Rotas e RBAC.
- * Verifica a presença do cookie de autenticação HttpOnly e autorizações por perfil (UserRole).
+ * Route protection and RBAC middleware.
+ *
+ * Runs on every request matched by `config.matcher` (all routes except static
+ * assets and the backend proxy). Enforces two rules in order:
+ * 1. A fresh JWT must be present — otherwise redirect to /login.
+ * 2. The role cookie must allow the requested path — otherwise redirect to
+ *    the role's default landing page.
+ *
+ * Signature validation is intentionally omitted here; it happens in the backend
+ * on every authenticated API call. This middleware only blocks obviously invalid
+ * or expired tokens to avoid unnecessary round-trips.
  */
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Obtém o cookie de autenticação JWT e o perfil do usuário enviado pela requisição
   const authToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
   const userRole = request.cookies.get(ROLE_COOKIE_NAME)?.value;
 
   const isLoginPage = pathname === "/login";
   const hasFreshToken = isJwtFresh(authToken);
 
-  // A tela de login deve continuar acessível para permitir a recuperação de
-  // sessões inválidas. Cookies malformados ou expirados são removidos.
+  // /login must stay accessible so users with expired sessions can re-authenticate.
+  // Stale cookies are cleaned up here to avoid confusing the login page's mock-auth
+  // hint logic (which reads the same cookie names).
   if (isLoginPage) {
     const response = NextResponse.next();
     if (authToken && !hasFreshToken) {
@@ -40,15 +52,14 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  // Um cookie presente não basta: ele também precisa ter formato JWT e não
-  // estar expirado. A assinatura será validada pelo backend em cada requisição.
+  // A cookie being present is not enough — it also needs a valid JWT shape and
+  // a non-expired `exp` claim. The backend validates the signature on each call.
   if (!hasFreshToken) {
     return redirectToLogin(request);
   }
 
-  // Validação de RBAC (Role-Based Access Control) para usuários autenticados
-  // Se tentar acessar uma rota não permitida para o seu papel (ex: ALUNO em /admin),
-  // redireciona para a rota inicial permitida do seu perfil
+  // RBAC: if the user tries to reach a route their role doesn't permit,
+  // redirect them to their own landing page rather than showing a 403.
   if (!isRouteAllowedForRole(pathname, userRole)) {
     const allowedPath = getRedirectPathByRole(userRole);
     return NextResponse.redirect(new URL(allowedPath, request.url));
@@ -58,18 +69,15 @@ export function middleware(request: NextRequest) {
 }
 
 /**
- * Configuração do matcher para definir as rotas auditadas pelo middleware.
+ * Matcher excludes:
+ * - Next.js internal asset paths (_next/static, _next/image)
+ * - favicon.ico
+ * - Public static assets (images, SVG, etc.)
+ * - /backend/* — the Next.js reverse-proxy route that forwards to Spring Boot;
+ *   it must be reachable unauthenticated to handle the login POST itself.
  */
 export const config = {
   matcher: [
-    /*
-     * Aplica o middleware em todas as rotas de requisição, exceto:
-     * - _next/static (arquivos estáticos)
-     * - _next/image (otimização de imagens)
-     * - favicon.ico (ícone do navegador)
-     * - imagens e recursos públicos (svg, png, jpg, jpeg, gif, webp, ico)
-     * - proxy do backend, que precisa receber login e primeiro acesso sem sessão
-     */
     "/((?!_next/static|_next/image|favicon.ico|assets/|backend/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
