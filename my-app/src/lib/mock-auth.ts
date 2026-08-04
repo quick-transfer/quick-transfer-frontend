@@ -8,9 +8,9 @@ export type MockAuthenticatedUser = {
 };
 
 /**
- * Credenciais de contingência para navegar no frontend enquanto a API estiver fora do ar.
- * Como variáveis NEXT_PUBLIC são visíveis no navegador, este acesso nunca deve proteger
- * dados reais nem substituir a autenticação e a autorização feitas pelo backend.
+ * Fallback credentials for navigating the frontend while the API is down.
+ * NEXT_PUBLIC_* variables are visible in the browser bundle — this access path
+ * must never protect real data and must not replace backend auth/authz.
  */
 export const MOCK_AUTH_CREDENTIALS = {
   username: process.env.NEXT_PUBLIC_MOCK_AUTH_USERNAME || "admin.mock",
@@ -18,8 +18,10 @@ export const MOCK_AUTH_CREDENTIALS = {
 } as const;
 
 /**
- * Em desenvolvimento o modo mock fica disponível por padrão. Em produção ele exige a
- * configuração explícita NEXT_PUBLIC_ENABLE_MOCK_AUTH=true e um novo deploy.
+ * Mock mode is on by default in development so new contributors don't need
+ * a running backend to start. In production it requires an explicit opt-in
+ * and a new deploy — setting the env var at runtime alone is not enough
+ * because Next.js bakes NEXT_PUBLIC_* values at build time.
  */
 export const IS_MOCK_AUTH_ENABLED =
   process.env.NEXT_PUBLIC_ENABLE_MOCK_AUTH === "true" ||
@@ -33,7 +35,7 @@ const MOCK_ADMIN: MockAuthenticatedUser = {
   role: "ADMIN",
 };
 
-/** Valida exclusivamente as credenciais do usuário de contingência. */
+/** Validates only the contingency user's credentials — real users never go through this path. */
 export function authenticateMockUser(
   username: string,
   password: string
@@ -55,9 +57,12 @@ function encodeBase64Url(value: object): string {
 }
 
 /**
- * Cria um token apenas com o formato esperado pelo middleware do frontend.
- * A assinatura propositalmente inválida impede que ele seja confundido com uma
- * sessão real caso seja enviado ao backend.
+ * Produces a token that satisfies the middleware's shape/expiry checks but is
+ * deliberately invalid for the backend. The third segment (`mock-session-not-valid-for-backend`)
+ * is not a real HMAC signature, so the backend will reject it if it ever reaches there —
+ * preventing mock sessions from being mistaken for real ones.
+ *
+ * TTL is 8 hours to match a typical working day without requiring re-login.
  */
 export function createMockSessionToken(user: MockAuthenticatedUser): string {
   const issuedAt = Math.floor(Date.now() / 1000);
