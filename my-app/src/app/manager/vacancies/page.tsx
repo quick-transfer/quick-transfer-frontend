@@ -95,7 +95,7 @@ export default function ManagerVacanciesPage() {
               href="/manager/vacancies/new"
               className={cn(
                 buttonVariants({ variant: "default" }),
-                "bg-primary-900 text-white hover:bg-primary-950 font-medium px-4 py-2 rounded-lg flex items-center gap-2"
+                "bg-primary-900 text-white hover:bg-primary-950 font-medium px-4 py-2 rounded-lg flex items-center gap-2 px-4 py-5"
               )}
             >
               <Plus className="size-4" /> Nova Vaga

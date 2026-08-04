@@ -96,7 +96,7 @@ export default function ManagerStudentsPage() {
       render: (student) => (
         <Link
           href={`/manager/students/${student.id}`}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-100")}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5 border-slate-200 text-slate-700 hover:bg-primary-900")}
         >
           <Eye className="size-3.5" /> Ver Perfil
         </Link>
