@@ -8,6 +8,7 @@ import type { UserRole } from "@/types";
 import { Separator } from "@base-ui/react/separator";
 import { useEffect, useState } from "react";
 
+// Accepts Portuguese aliases from the backend alongside the canonical English values.
 function normalizeRole(roleStr?: string | null): UserRole {
   if (!roleStr) return "ADMIN";
   const upper = roleStr.toUpperCase();
@@ -17,6 +18,11 @@ function normalizeRole(roleStr?: string | null): UserRole {
   return "ADMIN";
 }
 
+// Reads the role from the JS-readable cookie rather than from a server prop.
+// The role cookie is intentionally not HttpOnly so that client components can
+// use it to render role-specific UI without a server round-trip.
+// SSR guard (`typeof document === "undefined"`) prevents crashes during Next.js
+// static generation, which runs in Node where `document` doesn't exist.
 function getRoleFromCookie(): UserRole {
   if (typeof document === "undefined") return "ADMIN";
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${ROLE_COOKIE_NAME}=([^;]*)`));
@@ -29,6 +35,8 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
+  // Initialize to ADMIN to avoid a flash of wrong nav during hydration.
+  // The useEffect immediately reads the real role from the cookie on mount.
   const [role, setRole] = useState<UserRole>("ADMIN");
 
   useEffect(() => {
@@ -55,4 +63,3 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
     </TooltipProvider>
   );
 }
-
