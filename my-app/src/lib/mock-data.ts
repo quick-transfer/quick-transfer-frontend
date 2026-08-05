@@ -11,6 +11,12 @@ import type {
   TransferRequestDTO,
 } from "@/types";
 
+// ── Static mock data used while the backend is unavailable ──
+//
+// These records intentionally reflect real-world scenarios (e.g. a FULL shift,
+// a PENDING transfer request) so that every UI state path can be exercised
+// without needing a seeded database.
+
 export const mockUsers: UserDTO[] = [
   {
     id: "usr-1",
@@ -34,6 +40,7 @@ export const mockUsers: UserDTO[] = [
     active: true,
   },
   {
+    // Inactive user — exercises the disabled-account UI path.
     id: "usr-5",
     name: "Fernanda Souza",
     email: "fernanda.souza@weg.net",
@@ -90,6 +97,7 @@ export const mockCourses: CourseDTO[] = [
     status: "ACTIVE",
   },
   {
+    // COMPLETED course — exercises the read-only / archived UI state.
     id: "crs-3",
     name: "Usinagem CNC",
     code: "CNC-2024",
@@ -121,6 +129,7 @@ export const mockClasses: ClassDTO[] = [
     status: "IN_PROGRESS",
   },
   {
+    // PLANNED class — exercises the "not started yet" UI path.
     id: "cls-3",
     name: "Turma A - Automação",
     code: "AUT-A",
@@ -143,6 +152,7 @@ export const mockVacancies: VacancyDTO[] = [
     status: "OPEN",
   },
   {
+    // CLOSED vacancy — exercises the terminal/read-only badge path.
     id: "vac-2",
     title: "Técnico em Manutenção Preventiva",
     department: "Manutenção Geral",
@@ -152,6 +162,7 @@ export const mockVacancies: VacancyDTO[] = [
     status: "CLOSED",
   },
   {
+    // URGENT vacancy — exercises the warning badge; low filledSpots is intentional.
     id: "vac-3",
     title: "Operador CNC Aprendiz",
     department: "Usinagem",
@@ -184,6 +195,7 @@ export const mockInterviews: InterviewDTO[] = [
     status: "APPROVED",
   },
   {
+    // REJECTED interview — exercises the terminal/failure state.
     id: "int-3",
     candidateName: "Matheus Rocha",
     candidateEmail: "matheus.rocha@email.com",
@@ -209,6 +221,7 @@ export const mockStudents: StudentDTO[] = [
     performanceGrade: 9.2,
   },
   {
+    // TRANSFERRING student — exercises the pending-transfer UI state on the dashboard.
     id: "std-2",
     name: "Juliana Mendes",
     registration: "2024002",
@@ -242,6 +255,7 @@ export const mockShifts: ShiftDTO[] = [
     supervisorName: "Mariana Costa",
     capacity: 50,
     currentOccupancy: 45,
+    // Pre-computed to avoid per-render floating-point division in the UI.
     occupancyPercentage: 90,
     status: "HIGH_DEMAND",
   },
@@ -256,6 +270,7 @@ export const mockShifts: ShiftDTO[] = [
     status: "NORMAL",
   },
   {
+    // FULL shift — exercises the "Lotado" badge and the 100% progress bar.
     id: "shf-3",
     name: "Turno C - Noturno",
     code: "TRN-C",
@@ -287,6 +302,7 @@ export const mockTimeline: NotificationTimelineDTO[] = [
     status: "info",
   },
   {
+    // WARNING entry — exercises the amber/caution timeline variant.
     id: "tml-3",
     studentId: "std-1",
     title: "Alerta de Frequência",
@@ -299,6 +315,7 @@ export const mockTimeline: NotificationTimelineDTO[] = [
 
 export const mockTransferRequests: TransferRequestDTO[] = [
   {
+    // Both requests are PENDING to exercise the "Requer atenção" stat card trend.
     id: "req-1",
     studentName: "Juliana Mendes",
     currentShift: "Turno B (14:00 - 22:00)",

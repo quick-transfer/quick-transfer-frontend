@@ -32,7 +32,8 @@ import { useRouter } from 'next/navigation';
 import { apiFetch, AUTH_COOKIE_NAME } from "@/lib/api";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 
-// ── Icon map ──
+// String-keyed map so nav items reference icons by name from JSON/config
+// rather than importing every icon in every consumer.
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
   Clock,
@@ -69,37 +70,39 @@ const navigation: SidebarNavSection[] = [
         label: "Painel",
         href: "/dashboard",
         icon: "LayoutDashboard",
-        roles: ["COORDINATOR"],
+        roles: ["COORDINATOR", "ADMIN"],
       },
-      {
-        label: "Turnos",
-        href: "/shifts",
-        icon: "Clock",
-        roles: ["COORDINATOR"],
-      },
+      // Shifts route temporarily commented out — the shift management feature
+      // is under review for the coordinator role.
+      // {
+      //   label: "Turnos",
+      //   href: "/shifts",
+      //   icon: "Clock",
+      //   roles: ["COORDINATOR", "ADMIN"],
+      // },
       {
         label: "Turmas",
         href: "/classes",
         icon: "GraduationCap",
-        roles: ["COORDINATOR"],
+        roles: ["COORDINATOR", "ADMIN"],
       },
       {
         label: "Alunos",
         href: "/students",
         icon: "Users",
-        roles: ["COORDINATOR"],
+        roles: ["COORDINATOR", "ADMIN"],
       },
       {
         label: "Cursos",
         href: "/courses",
         icon: "BookOpen",
-        roles: ["COORDINATOR"],
+        roles: ["COORDINATOR", "ADMIN"],
       },
       {
         label: "Direcionar Alunos",
         href: "/coordinator/direct",
         icon: "Users2",
-        roles: ["COORDINATOR"],
+        roles: ["COORDINATOR", "ADMIN"],
       },
     ],
   },
@@ -141,6 +144,7 @@ const navigation: SidebarNavSection[] = [
         icon: "Users",
         roles: ["ADMIN"],
       },
+      // Sections route hidden pending a redesign of the manager-section hierarchy.
       // {
       //   label: "Gestores",
       //   href: "/admin/sections",
@@ -153,6 +157,7 @@ const navigation: SidebarNavSection[] = [
         icon: "MapPin",
         roles: ["ADMIN"],
       },
+      // Admin interviews view hidden — managers own the interview workflow.
       // {
       //   label: "Entrevistas",
       //   href: "/admin/interviews",
@@ -165,6 +170,7 @@ const navigation: SidebarNavSection[] = [
         icon: "BookOpen",
         roles: ["ADMIN"],
       },
+      // Admin class management hidden — coordinators own class creation.
       // {
       //   label: "Turmas",
       //   href: "/admin/classes",
@@ -181,6 +187,9 @@ const navigation: SidebarNavSection[] = [
   },
 ];
 
+// Accepts Portuguese aliases from the backend cookie value.
+// Unmapped values default to ADMIN so the admin always sees everything —
+// safer than hiding nav items for an unknown role.
 function normalizeRole(roleStr?: UserRole | string | null): UserRole {
   if (!roleStr) return "ADMIN";
   const upper = roleStr.toUpperCase();
@@ -204,26 +213,31 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
     try {
       setSaindo(true);
 
-      // Limpa os cookies locais (suporta o modo mock / fallback de teste)
+      // Clear the JS-readable cookies immediately so the sidebar doesn't
+      // briefly re-render with the old role if the backend call is slow.
+      // This also covers the mock session, which never hits the backend.
       document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
-      // Requisição POST para o endpoint de logout do backend Spring Boot enviando credentials: "include"
+      // The backend POST invalidates the HttpOnly JWT cookie server-side.
+      // Network errors are intentionally swallowed — even if the backend is
+      // unreachable, the local cookies are already cleared and the redirect
+      // to /login effectively ends the session from the frontend's perspective.
       await apiFetch("/auth/logout", {
         method: "POST",
       });
     } catch (error) {
-      // Ignora erros de rede no logout para garantir o redirecionamento
       console.warn("Erro ou backend indisponível no logout:", error);
     } finally {
       setSaindo(false);
-      // Redireciona o usuário para a rota de login após a invalidação da sessão/cookie
       router.push("/login");
     }
   };
 
   const activeRole = normalizeRole(currentRole);
 
+  // Filter out sections that have no visible items for the current role,
+  // rather than rendering empty section headers.
   const filteredNav = navigation
     .map((section) => ({
       ...section,
@@ -259,7 +273,11 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
               <Separator className="bg-primary-900 mb-2" />
               <ul className="space-y-1">
                 {section.items.map((item) => {
+                  // Fall back to LayoutDashboard if a new icon name is added to
+                  // the nav config before being added to iconMap.
                   const Icon = iconMap[item.icon] ?? LayoutDashboard;
+                  // /dashboard and /admin are exact-matched to avoid marking every
+                  // sub-route as active when the user is on a child page.
                   const isActive =
                     pathname === item.href ||
                     (item.href !== "/dashboard" &&
@@ -309,7 +327,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile hamburger toggle */}
+      {/* Mobile hamburger — fixed position keeps it reachable when content scrolls */}
       <Button
         variant="ghost"
         size="icon"
@@ -320,7 +338,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
       </Button>
 
-      {/* Mobile overlay */}
+      {/* Mobile overlay — tap outside to close the drawer */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
@@ -329,7 +347,7 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
         />
       )}
 
-      {/* Sidebar - desktop: standard fixed left w-60 */}
+      {/* Sidebar — always visible on desktop; slides in/out on mobile */}
       <aside
         className={cn(
           "fixed top-0 left-0 z-40 h-screen w-60 transition-transform duration-300 ease-in-out",

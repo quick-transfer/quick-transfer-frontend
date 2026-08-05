@@ -1,13 +1,13 @@
 /**
- * Usa o proxy do Next por padrão para evitar CORS e não expor o endereço do backend.
- * A URL ainda pode ser sobrescrita em ambientes que forneçam NEXT_PUBLIC_API_URL.
+ * Uses the Next.js proxy by default to avoid CORS and avoid exposing the
+ * backend address in the browser. Can be overridden via NEXT_PUBLIC_API_URL
+ * for deployments that talk directly to the backend.
  */
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/backend";
 
-/** Nome do cookie HttpOnly emitido pelo backend após a autenticação. */
+/** Name of the HttpOnly cookie issued by the backend after authentication. */
 export const AUTH_COOKIE_NAME = "JWT";
 
-// 1. Criando a classe ApiError
 export class ApiError extends Error {
   status: number;
 
@@ -18,7 +18,9 @@ export class ApiError extends Error {
   }
 }
 
-// Mensagens estáveis impedem que detalhes internos da infraestrutura apareçam na interface.
+// Static messages prevent internal infrastructure details from leaking into the UI.
+// 502/503 share a message intentionally — from the user's perspective the distinction
+// between "gateway bad" and "service unavailable" is meaningless.
 const HTTP_ERROR_MESSAGES: Partial<Record<number, string>> = {
   500: "O servidor encontrou um erro interno. Tente novamente mais tarde.",
   502: "O servidor está temporariamente indisponível. Tente novamente em alguns minutos.",
@@ -31,9 +33,14 @@ function defaultErrorMessage(status: number): string {
 }
 
 /**
- * Função utilitária centralizada para realizar requisições HTTP para a API Spring Boot.
- * Por padrão, define `credentials: "include"` em todas as chamadas para que o navegador
- * envie e receba cookies com a flag HttpOnly.
+ * Centralised HTTP wrapper for all Spring Boot API calls.
+ *
+ * Always sends `credentials: "include"` so the browser attaches and receives
+ * the HttpOnly JWT cookie on every request — this is required by the backend
+ * session model and must not be removed.
+ *
+ * FormData bodies are excluded from the automatic Content-Type injection
+ * because the browser must set it itself (with the correct multipart boundary).
  */
 export async function apiFetch<T = unknown>(
   endpoint: string,
@@ -52,12 +59,12 @@ export async function apiFetch<T = unknown>(
     response = await fetch(url, {
       ...options,
       headers,
-      // Garantindo o envio e recebimento dos cookies HttpOnly no navegador
       credentials: "include",
     });
   } catch {
     throw new ApiError(
       "Não foi possível conectar ao servidor. Verifique sua conexão e tente novamente.",
+      // Status 0 signals a network-level failure (no HTTP response at all).
       0
     );
   }
@@ -66,8 +73,8 @@ export async function apiFetch<T = unknown>(
     let errorMessage = defaultErrorMessage(response.status);
     try {
       const contentType = response.headers.get("content-type") || "";
-      // A API usa { message }, mas respostas textuais curtas também são aceitas.
-      // HTML é ignorado para não exibir páginas inteiras de erro ao usuário.
+      // The API uses { message }, but short plain-text responses are also accepted.
+      // HTML is ignored to avoid rendering entire Spring error pages in the UI.
       if (contentType.includes("application/json")) {
         const errorData: unknown = await response.json();
         if (
@@ -80,19 +87,21 @@ export async function apiFetch<T = unknown>(
           errorMessage = errorData.message;
         }
       } else if (contentType.includes("text/plain")) {
+        // Length guard prevents truncated 50 KB server-generated text pages from reaching users.
         const errorText = (await response.text()).trim();
         if (errorText && errorText.length <= 500) {
           errorMessage = errorText;
         }
       }
     } catch {
-      // Ignora erro de parsing da resposta de erro
+      // Parsing the error body itself failed — fall through to the default message.
     }
 
-    // 2. Usando ApiError consistentemente com o status da resposta HTTP
     throw new ApiError(errorMessage, response.status);
   }
 
+  // 204 No Content — return an empty object typed as T rather than trying to parse
+  // an empty body (which would throw a JSON parse error).
   if (response.status === 204) {
     return {} as T;
   }
@@ -100,6 +109,7 @@ export async function apiFetch<T = unknown>(
   try {
     return (await response.json()) as T;
   } catch {
+    // Body was unexpectedly empty or non-JSON on a 2xx response — safe to swallow.
     return {} as T;
   }
 }

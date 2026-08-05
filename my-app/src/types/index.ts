@@ -1,6 +1,8 @@
 // Types reflecting the Quick Transfer backend API schemas
 // Repository: https://github.com/quick-transfer/quick-transfer-backend (branch: develop)
 
+// STUDENT is defined here for completeness but the frontend currently has no
+// student-facing routes — the role exists only for future expansion.
 export type UserRole = "ADMIN" | "COORDINATOR" | "MANAGER" | "STUDENT";
 
 export type StatusType = "success" | "danger" | "warning" | "info" | "neutral";
@@ -9,6 +11,7 @@ export interface NavItem {
   label: string;
   href: string;
   icon: string;
+  // Lowercase strings here, not UserRole — the sidebar normalizes them before comparing.
   roles: ("admin" | "coordinator")[];
 }
 
@@ -59,6 +62,8 @@ export interface ClassDTO {
   status: "IN_PROGRESS" | "PLANNED" | "COMPLETED";
 }
 
+// VacancyDTO is the coordinator-facing view of a vacancy (dashboard summary).
+// The manager-facing full model lives in lib/manager-api.ts as Vacancy.
 export interface VacancyDTO {
   id: string;
   title: string;
@@ -77,6 +82,7 @@ export interface InterviewDTO {
   scheduledDate: string;
   scheduledTime: string;
   interviewerName: string;
+  // APPROVED and REJECTED are terminal states; PENDING is the only actionable one.
   status: "SCHEDULED" | "APPROVED" | "REJECTED" | "PENDING";
 }
 
@@ -101,6 +107,7 @@ export interface ShiftDTO {
   supervisorName: string;
   capacity: number;
   currentOccupancy: number;
+  // Pre-computed by the backend to avoid floating-point division on every render.
   occupancyPercentage: number;
   status: "NORMAL" | "HIGH_DEMAND" | "FULL";
 }

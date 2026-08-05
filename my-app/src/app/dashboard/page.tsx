@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { buttonVariants } from "@/components/ui/button";
 import { mockStudents, mockTransferRequests, mockVacancies } from "@/lib/mock-data";
 import type { VacancyDTO } from "@/types";
-import { Users, FileText, ArrowUpRight, Briefcase } from "lucide-react";
+import { Users, FileText, ArrowUpRight, Briefcase, Plus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -83,23 +83,23 @@ export default function DashboardPage() {
           actions={
             <Link
               href="/classes/new"
-              className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 p-5 text-[16px]")}
+              className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
             >
-              Nova Turma
+              <Plus className="size-4" /> Nova Turma
             </Link>
           }
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vacancies table — spans 2 of 3 columns so the stat sidebar doesn't compete for attention. */}
-          <div className="space-y-4 rounded-xl bg-card p-6 shadow-[0_5px_7px_4px_rgba(0,0,0,0.2)] lg:col-span-2">
+          <div className="space-y-4 rounded-xl bg-card p-6 shadow-primary-900 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-[20px] font-semibold text-foreground">Vagas Criadas</h2>
                 <p className="text-sm text-muted-foreground">Visão geral das vagas abertas nas unidades fabris</p>
               </div>
               <Link
-                href="/admin/vacancies"
+                href="/coordinator/direct"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
               >
                 Ver todos <ArrowUpRight className="size-4" />

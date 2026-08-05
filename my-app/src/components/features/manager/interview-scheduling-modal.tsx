@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Vagas em aberto disponíveis para o gestor selecionar
+// Hardcoded pending API integration — these should eventually come from
+// getVacancies() filtered to status === "OPEN" for the current manager's section.
 const openVacancies = [
   { id: "vac-1", title: "Montador de Painéis Elétricos" },
   { id: "vac-2", title: "Técnico de Automação Jr" },
@@ -23,6 +24,8 @@ interface InterviewSchedulingModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidateName: string;
+  // When provided, the vacancy is pre-selected and the dropdown is replaced with
+  // a read-only display — used when opening the modal from a vacancy's student list.
   vacancyTitle?: string;
   onConfirm: (data: { date: string; time: string; notes: string; vacancyId: string }) => void;
 }
@@ -40,11 +43,12 @@ export function InterviewSchedulingModal({
   const [selectedVacancyId, setSelectedVacancyId] = useState(openVacancies[0]?.id ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Data de hoje (limite mínimo)
+  // "sv-SE" locale produces YYYY-MM-DD, which is the format <input type="date"> requires.
   const today = new Date();
   const todayStr = today.toLocaleDateString("sv-SE");
 
-  // Exatamente 1 ano no futuro (limite máximo)
+  // Business rule: interviews may not be scheduled more than 1 year out to
+  // prevent phantom bookings from blocking calendar slots indefinitely.
   const maxDate = new Date();
   maxDate.setFullYear(today.getFullYear() + 1);
   const maxDateStr = maxDate.toLocaleDateString("sv-SE");
@@ -52,7 +56,8 @@ export function InterviewSchedulingModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validação extra garantindo o intervalo de no máximo 1 ano
+    // String comparison works here because both dates are YYYY-MM-DD — ISO 8601
+    // lexicographic order equals chronological order.
     if (date < todayStr || date > maxDateStr) {
       alert("Selecione uma data entre hoje e no máximo 1 ano a partir de hoje.");
       return;
@@ -60,8 +65,8 @@ export function InterviewSchedulingModal({
 
     setIsSubmitting(true);
 
-    // Simula a requisição à API e notificação por e-mail ao coordenador
-    // TODO: Integrar endpoint de notificação ao coordenador responsável
+    // TODO: Replace setTimeout with a real createInterview() + sendInterviewEmail()
+    // call once the coordinator notification endpoint is ready.
     setTimeout(() => {
       onConfirm({ date, time, notes, vacancyId: selectedVacancyId });
       setIsSubmitting(false);
@@ -88,6 +93,7 @@ export function InterviewSchedulingModal({
               Vaga em Aberto
             </Label>
             {vacancyTitle ? (
+              // Read-only display when the vacancy context is already known.
               <div className="h-10 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 font-medium">
                 {vacancyTitle}
               </div>
@@ -118,8 +124,8 @@ export function InterviewSchedulingModal({
                 id="interview-date"
                 type="date"
                 required
-                min={todayStr}    // Bloqueia datas anteriores a hoje
-                max={maxDateStr}  // Bloqueia datas além de 1 ano
+                min={todayStr}
+                max={maxDateStr}
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="h-10 text-sm bg-white border-slate-200"
@@ -185,4 +191,3 @@ export function InterviewSchedulingModal({
     </Dialog>
   );
 }
-

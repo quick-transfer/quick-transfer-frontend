@@ -139,7 +139,7 @@ export default function CoordinatorCoursesPage() {
           description="Gerencie os cursos técnicos e acompanhe os alunos matriculados em cada programa"
           actions={
             <Button
-              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              className="gap-2 bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]"
               onClick={() => setIsNewOpen(true)}
             >
               <Plus className="size-4" /> Novo Curso

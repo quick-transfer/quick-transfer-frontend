@@ -26,6 +26,13 @@ import { cn } from "@/lib/utils";
 
 // ── Types ──
 
+/**
+ * Column descriptor for DataTable.
+ *
+ * `key` doubles as the sort key — it must match the property name on T for
+ * sorting to work. If `render` is provided the raw value is still used for
+ * sorting; rendering and sorting are independent.
+ */
 export interface DataTableColumn<T> {
   key: string;
   header: string;
@@ -40,10 +47,13 @@ interface DataTableProps<T> {
   pageSize?: number;
   searchable?: boolean;
   searchPlaceholder?: string;
+  // Explicit key list rather than searching all fields — avoids accidentally
+  // matching internal IDs or numeric codes that are meaningless to the user.
   searchKeys?: string[];
   emptyTitle?: string;
   emptyDescription?: string;
   className?: string;
+  // Preferred over the row index for React reconciliation; use a stable domain ID.
   getRowKey?: (row: T) => string;
 }
 
@@ -51,6 +61,12 @@ type SortDirection = "asc" | "desc" | null;
 
 // ── Component ──
 
+/**
+ * Generic, client-side sortable/paginated/searchable data table.
+ *
+ * All filtering, sorting, and pagination are done in-memory. Not suitable for
+ * datasets where the server must paginate (i.e. > a few hundred rows).
+ */
 export function DataTable<T extends Record<string, any>>({
   columns,
   data,
@@ -68,7 +84,9 @@ export function DataTable<T extends Record<string, any>>({
   const [sortDir, setSortDir] = useState<SortDirection>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter
+  // useMemo for filter and sort prevents re-running O(n) operations on every
+  // keystroke that doesn't change the relevant inputs.
+
   const filteredData = useMemo(() => {
     if (!searchQuery.trim() || searchKeys.length === 0) return data;
     const query = searchQuery.toLowerCase();
@@ -80,15 +98,17 @@ export function DataTable<T extends Record<string, any>>({
     );
   }, [data, searchQuery, searchKeys]);
 
-  // Sort
   const sortedData = useMemo(() => {
     if (!sortKey || !sortDir) return filteredData;
     return [...filteredData].sort((a, b) => {
       const aVal = a[sortKey];
       const bVal = b[sortKey];
+      // Nulls always sort last regardless of direction.
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
+      // localeCompare with numeric:true handles "10" > "9" correctly without
+      // needing to know whether the column contains numbers or strings.
       const cmp = String(aVal).localeCompare(String(bVal), "pt-BR", {
         numeric: true,
       });
@@ -96,14 +116,20 @@ export function DataTable<T extends Record<string, any>>({
     });
   }, [filteredData, sortKey, sortDir]);
 
-  // Pagination
+  // Math.max(1, …) prevents totalPages from being 0 when data is empty,
+  // which would break the safePage clamp below.
   const totalPages = Math.max(1, Math.ceil(sortedData.length / pageSize));
+  // safePage re-clamps currentPage after a filter removes rows and the current
+  // page no longer exists — avoids showing an empty page.
   const safePage = Math.min(currentPage, totalPages);
   const paginatedData = sortedData.slice(
     (safePage - 1) * pageSize,
     safePage * pageSize
   );
 
+  // Sort cycle: unsorted → asc → desc → unsorted.
+  // Resetting to page 1 on sort prevents viewing an empty last page after
+  // sort order changes reduce the visible row count.
   const handleSort = (key: string) => {
     if (sortKey === key) {
       if (sortDir === "asc") setSortDir("desc");
@@ -135,6 +161,7 @@ export function DataTable<T extends Record<string, any>>({
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
+              // Reset to page 1 so filtered results always start from the beginning.
               setCurrentPage(1);
             }}
             className="pl-9"
@@ -181,6 +208,8 @@ export function DataTable<T extends Record<string, any>>({
             ) : (
               paginatedData.map((row, rowIndex) => (
                 <TableRow
+                  // Fall back to row index only when getRowKey isn't provided —
+                  // index keys break React reconciliation on reorder/filter.
                   key={getRowKey ? getRowKey(row) : rowIndex}
                   className="hover:bg-muted/30 transition-colors"
                 >
@@ -199,7 +228,7 @@ export function DataTable<T extends Record<string, any>>({
         </Table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination — hidden when all data fits on one page */}
       {sortedData.length > pageSize && (
         <div className="flex items-center justify-between px-1">
           <p className="text-sm text-muted-foreground">
@@ -238,7 +267,9 @@ export function DataTable<T extends Record<string, any>>({
               <ChevronLeft className="size-3.5" />
             </Button>
 
-            {/* Page numbers */}
+            {/* Page numbers — windowed to ±1 around current page plus always
+                showing first and last, with ellipsis for gaps. This keeps the
+                control compact even with 50+ pages. */}
             {Array.from({ length: totalPages }, (_, i) => i + 1)
               .filter((page) => {
                 if (totalPages <= 5) return true;

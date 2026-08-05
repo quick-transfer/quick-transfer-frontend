@@ -98,7 +98,7 @@ export default function TurmasPage() {
           actions={
             <Link
               href="/classes/new"
-              className={cn(buttonVariants({ variant: "default" }), "gap-2 bg-primary text-white hover:bg-primary-700")}
+              className={cn(buttonVariants({ variant: "default" }), "gap-2 bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
             >
               <Plus className="size-4" /> Nova Turma
             </Link>

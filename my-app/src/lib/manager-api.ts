@@ -1,7 +1,15 @@
 import { apiFetch } from "@/lib/api";
 
+// ── Enumerations ──
+
+// VacancyArea and VacancyShift are kept as open string unions (| string) to
+// remain forward-compatible if the backend adds new values before the frontend
+// is updated. Exhaustive switch/case over these should always include a default.
 export type VacancyArea = "IT" | "MAINTENANCE" | "TOOLING" | "CHEMISTRY";
 export type VacancyShift = "FIRST" | "SECOND" | "THIRD" | "FLEXIBLE_SHIFT";
+
+// InterviewStatus tracks the lifecycle of a candidate through the selection process.
+// NOT_ASSOCIATED means no interview has been linked to the student yet.
 export type InterviewStatus =
   | "NOT_ASSOCIATED"
   | "NOT_SEEN"
@@ -9,6 +17,8 @@ export type InterviewStatus =
   | "SEEN"
   | "DISAPPROVED"
   | "HIRED";
+
+// ── API DTOs ──
 
 export interface Vacancy {
   id: string;
@@ -27,9 +37,12 @@ export interface VacancyInput {
   numbersVacancies: number;
   area: VacancyArea;
   shift: VacancyShift;
+  // placeId rather than location string — the backend resolves park/section from the Place entity.
   placeId: string;
 }
 
+// Update omits numbersVacancies intentionally: spot count changes go through
+// a separate backend workflow to maintain audit integrity.
 export interface VacancyUpdateInput {
   name: string;
   description: string;
@@ -54,6 +67,8 @@ export interface Student {
 export interface Skill {
   id: string;
   name: string;
+  // TECHNICAL and SOCIOEMOTIONAL are the two current categories; string allows
+  // new types without a breaking schema change.
   skillType: "TECHNICAL" | "SOCIOEMOTIONAL" | string;
   grade?: number;
   studentName: string;
@@ -68,6 +83,7 @@ export interface Place {
 
 export interface PlaceInput {
   placeName: string;
+  // Only two parks currently supported by the backend.
   park: "WEG_I" | "WEG_II";
   section: string;
 }
@@ -117,12 +133,16 @@ export interface Interview {
 
 export interface InterviewInput {
   interviewerName: string;
+  // ISO 8601 datetime string expected by the backend — no timezone conversion is done here.
   dateTime: string;
   placeId: string;
   studentId: string;
   managerId: string;
   vacancyId: string;
 }
+
+// ── Display label maps ──
+// Kept outside components so they can be shared without re-importing component modules.
 
 export const areaLabels: Record<string, string> = {
   IT: "Tecnologia da Informação",
@@ -142,10 +162,14 @@ export const interviewStatusLabels: Record<string, string> = {
   NOT_ASSOCIATED: "Não associado",
   NOT_SEEN: "Convite não visualizado",
   DISCARDED: "Descartado",
+  // SEEN means the candidate has viewed the invite and is available to interview.
   SEEN: "Disponível",
   DISAPPROVED: "Reprovado",
   HIRED: "Contratado",
 };
+
+// ── API functions ──
+// IDs are always encodeURIComponent'd to handle UUIDs safely in path segments.
 
 export function getVacancies() {
   return apiFetch<Vacancy[]>("/vacancy/find/all");
@@ -183,6 +207,8 @@ export function getStudent(id: string) {
   return apiFetch<Student>(`/student/find/id/${encodeURIComponent(id)}`);
 }
 
+// Only the interview status is patchable here — other student fields are managed
+// through separate coordinator-facing endpoints not exposed in this module.
 export function updateStudentInterviewStatus(
   id: string,
   statusStudentInterview: InterviewStatus
@@ -193,6 +219,7 @@ export function updateStudentInterviewStatus(
   });
 }
 
+// studentName filter is applied server-side; no client-side filtering fallback.
 export function getSkills(studentName?: string) {
   if (!studentName) return apiFetch<Skill[]>("/skill/find/all");
   return apiFetch<Skill[]>(
@@ -229,7 +256,7 @@ export function getManagers() {
 }
 
 /**
- * Cria um gestor. O backend protege esta rota para sessões com perfil ADMIN.
+ * Creates a manager account. The backend restricts this endpoint to ADMIN sessions.
  */
 export function createManager(input: ManagerInput) {
   return apiFetch<Manager>("/manager/create", {
@@ -239,7 +266,7 @@ export function createManager(input: ManagerInput) {
 }
 
 /**
- * Cria um coordenador. O backend protege esta rota para sessões com perfil ADMIN.
+ * Creates a coordinator account. The backend restricts this endpoint to ADMIN sessions.
  */
 export function createCoordinator(input: CoordinatorInput) {
   return apiFetch<Coordinator>("/coordinator/create", {
@@ -259,6 +286,10 @@ export function createInterview(input: InterviewInput) {
   });
 }
 
+/**
+ * Triggers the backend to send an invitation email for a scheduled interview.
+ * Email is passed as a query param because the endpoint does not accept a body.
+ */
 export function sendInterviewEmail(interviewId: string, email: string) {
   return apiFetch<string>(
     `/manager/interview/sendEmail/${encodeURIComponent(interviewId)}?email=${encodeURIComponent(email)}`,
