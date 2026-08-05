@@ -43,7 +43,7 @@ export default function NovaTurmaPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Turmas", href: "/admin/classes" },
+        { label: "Turmas", href: "/classes" },
         { label: "Nova Turma" },
       ]}
     >
@@ -53,8 +53,8 @@ export default function NovaTurmaPage() {
           description="Cadastre uma nova turma e vincule os alunos aprendizes"
           actions={
             <Link
-              href="/admin/classes"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
+              href="/classes"
+              className={cn(buttonVariants({ variant: "outline" }), "gap-2 px-4 py-5 border-none")}
             >
               <ArrowLeft className="size-4" /> Voltar
             </Link>
@@ -71,7 +71,7 @@ export default function NovaTurmaPage() {
                 <Label htmlFor="className">Nome da Turma</Label>
                 <Input
                   id="className"
-                  placeholder="Ex: Turma C - Eletromecânica"
+                  placeholder="Ex: Turma - Desenvolvimento Web"
                   value={className}
                   onChange={(e) => setClassName(e.target.value)}
                   required
@@ -82,7 +82,7 @@ export default function NovaTurmaPage() {
                 <Label htmlFor="classCode">Código da Turma</Label>
                 <Input
                   id="classCode"
-                  placeholder="Ex: TEL-C-2026"
+                  placeholder="Ex: MI79"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value)}
                   required
@@ -159,12 +159,12 @@ export default function NovaTurmaPage() {
 
           <div className="flex justify-end gap-3">
             <Link
-              href="/admin/classes"
-              className={buttonVariants({ variant: "outline" })}
+              href="/classes"
+              className={cn(buttonVariants({ variant: "outline" }), "px-4 py-5")}
             >
               Cancelar
             </Link>
-            <Button type="submit" className="gap-2 bg-primary text-white hover:bg-primary-700">
+            <Button type="submit" className="gap-2 bg-primary text-white px-4 py-5 hover:bg-primary-700">
               <Save className="size-4" /> Cadastrar Turma
             </Button>
           </div>
