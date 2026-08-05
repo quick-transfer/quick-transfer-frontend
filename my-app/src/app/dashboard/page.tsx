@@ -6,58 +6,67 @@ import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { buttonVariants } from "@/components/ui/button";
-import { mockShifts, mockStudents, mockTransferRequests } from "@/lib/mock-data";
-import type { ShiftDTO } from "@/types";
-import { Clock, Users, FileText, ArrowUpRight } from "lucide-react";
+import { mockStudents, mockTransferRequests, mockVacancies } from "@/lib/mock-data";
+import type { VacancyDTO } from "@/types";
+import { Users, FileText, ArrowUpRight, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
+  // PENDING is the only actionable state for coordinators — APPROVED/REJECTED are terminal.
   const totalStudents = mockStudents.length;
   const pendingRequests = mockTransferRequests.filter((r) => r.status === "PENDING").length;
+  const totalVacancies = mockVacancies.length;
 
-  const shiftColumns: DataTableColumn<ShiftDTO>[] = [
+  const vacancyColumns: DataTableColumn<VacancyDTO>[] = [
     {
-      key: "name",
-      header: "Turno",
+      key: "title",
+      header: "Vaga",
       sortable: true,
-      render: (shift) => (
+      render: (vacancy) => (
         <div>
-          <p className="font-medium text-foreground">{shift.name}</p>
-          <p className="text-xs text-muted-foreground">Supervisão: {shift.supervisorName}</p>
+          <p className="font-medium text-foreground">{vacancy.title}</p>
+          {/* Department + location collapsed into one line to keep the row height consistent with other tables in the app. */}
+          <p className="text-xs text-muted-foreground">{vacancy.department} · {vacancy.location}</p>
         </div>
       ),
     },
     {
-      key: "currentOccupancy",
-      header: "Ocupação",
-      render: (shift) => (
-        <div className="w-48 space-y-1">
-          <div className="flex justify-between text-xs font-medium">
-            <span>{shift.currentOccupancy} / {shift.capacity} alunos</span>
-            <span>{shift.occupancyPercentage}%</span>
+      key: "filledSpots",
+      header: "Preenchimento",
+      render: (vacancy) => {
+        // Math.round avoids displaying e.g. "66.666...%" when totalSpots doesn't divide evenly.
+        const pct = Math.round((vacancy.filledSpots / vacancy.totalSpots) * 100);
+        return (
+          <div className="w-48 space-y-1">
+            <div className="flex justify-between text-xs font-medium">
+              <span>{vacancy.filledSpots} / {vacancy.totalSpots} vagas</span>
+              <span>{pct}%</span>
+            </div>
+            <Progress value={pct} className="h-2" />
           </div>
-          <Progress value={shift.occupancyPercentage} className="h-2" />
-        </div>
-      ),
+        );
+      },
     },
     {
       key: "status",
       header: "Status",
-      render: (shift) => {
-        if (shift.status === "FULL") return <Badge variant="danger">Lotado</Badge>;
-        if (shift.status === "HIGH_DEMAND") return <Badge variant="warning">Alta Demanda</Badge>;
-        return <Badge variant="success">Disponível</Badge>;
+      render: (vacancy) => {
+        // URGENT takes priority in the else-if chain — it signals HR action needed,
+        // whereas CLOSED is a terminal state that just needs acknowledgement.
+        if (vacancy.status === "CLOSED") return <Badge variant="danger">Encerrada</Badge>;
+        if (vacancy.status === "URGENT") return <Badge variant="warning">Urgente</Badge>;
+        return <Badge variant="success">Aberta</Badge>;
       },
     },
     {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: (shift) => (
+      render: (vacancy) => (
         <Link
-          href={`/shifts?id=${shift.id}`}
-          className={buttonVariants({ variant: "outline", size: "sm" })}
+          href={`/admin/vacancies?id=${vacancy.id}`}
+          className={cn(buttonVariants({ variant: "outline", size: "sm" }), 'gap-1')}
         >
           Detalhes
         </Link>
@@ -82,24 +91,25 @@ export default function DashboardPage() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Active Shifts Table */}
+          {/* Vacancies table — spans 2 of 3 columns so the stat sidebar doesn't compete for attention. */}
           <div className="space-y-4 rounded-xl bg-card p-6 shadow-[0_5px_7px_4px_rgba(0,0,0,0.2)] lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-[20px] font-semibold text-foreground">Turnos Ativos</h2>
-                <p className="text-sm text-muted-foreground">Ocupação em tempo real nas unidades fabris</p>
+                <h2 className="text-[20px] font-semibold text-foreground">Vagas Criadas</h2>
+                <p className="text-sm text-muted-foreground">Visão geral das vagas abertas nas unidades fabris</p>
               </div>
               <Link
-                href="/shifts"
+                href="/admin/vacancies"
                 className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
               >
                 Ver todos <ArrowUpRight className="size-4" />
               </Link>
             </div>
 
+            {/* pageSize=5 is intentional: keeps the card within viewport height on 1080p without scrolling. */}
             <DataTable
-              columns={shiftColumns}
-              data={mockShifts}
+              columns={vacancyColumns}
+              data={mockVacancies}
               pageSize={5}
               getRowKey={(row) => row.id}
             />
@@ -108,9 +118,9 @@ export default function DashboardPage() {
           {/* Stats Grid */}
           <div className="flex flex-col gap-4">
             <StatCard
-              label="Total de Turnos Ativos"
-              value={mockShifts.length}
-              icon={Clock}
+              label="Total de Vagas Criadas"
+              value={totalVacancies}
+              icon={Briefcase}
             />
             <StatCard
               label="Alunos Matriculados"
@@ -121,6 +131,7 @@ export default function DashboardPage() {
               label="Solicitações Pendentes"
               value={pendingRequests}
               icon={FileText}
+              // positive: false keeps the trend indicator red — pending requests always signal work outstanding.
               trend={{ value: "Requer atenção", positive: false }}
             />
           </div>
