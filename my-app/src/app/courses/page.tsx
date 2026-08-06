@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -15,12 +15,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockCourses, mockStudents } from "@/lib/mock-data";
 import type { CourseDTO, StudentDTO } from "@/types";
 import { BookOpen, Users, Eye, ArrowUpRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { createCourse, getAppStudents, getCourses } from '@/lib/application-api';
 
 export default function CoordinatorCoursesPage() {
   const [filterTab, setFilterTab] = useState<string>("ALL");
@@ -28,9 +28,20 @@ export default function CoordinatorCoursesPage() {
   const [isStudentsOpen, setIsStudentsOpen] = useState(false);
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [formName, setFormName] = useState("");
-  const [formCode, setFormCode] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
-  const [courses, setCourses] = useState<CourseDTO[]>(mockCourses);
+  const [courses, setCourses] = useState<CourseDTO[]>([]);
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    Promise.all([getCourses(), getAppStudents()]).then(([courseData, studentData]) => {
+      setCourses(courseData);
+      setStudents(studentData);
+    }).catch((loadError) => {
+      setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os cursos.');
+    });
+  }, []);
 
   const filteredCourses = courses.filter((c) => {
     if (filterTab === "ACTIVE") return c.status === "ACTIVE";
@@ -39,29 +50,36 @@ export default function CoordinatorCoursesPage() {
   });
 
   const courseStudents = (course: CourseDTO): StudentDTO[] =>
-    mockStudents.filter((s) => s.courseName === course.name);
+    students.filter((s) => s.courseName === course.name);
 
   const handleViewStudents = (course: CourseDTO) => {
     setSelectedCourse(course);
     setIsStudentsOpen(true);
   };
 
-  const handleCreate = () => {
-    if (!formName.trim() || !formCode.trim()) return;
-    const newCourse: CourseDTO = {
-      id: `crs-${Date.now()}`,
+  const handleCreate = async () => {
+    if (!formName.trim()) return;
+    const newCourse: Omit<CourseDTO, 'id'> = {
       name: formName,
-      code: formCode,
+      code: "",
       coordinatorName: "Meu Coordenador",
       totalStudents: 0,
       status: "ACTIVE",
     };
-    setCourses((prev) => [...prev, newCourse]);
+    setSaving(true);
+    setError('');
+    try {
+      const created = await createCourse(newCourse);
+      setCourses((prev) => [...prev, created]);
     setIsNewOpen(false);
     setFormName("");
-    setFormCode("");
     setSuccessMsg("Curso criado com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 7000);
+    setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível criar o curso.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const columns: DataTableColumn<CourseDTO>[] = [
@@ -147,8 +165,11 @@ export default function CoordinatorCoursesPage() {
           }
         />
 
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        )}
         <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-white p-1">
+          <TabsList className="bg-muted p-1">
             <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
             <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
             <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
@@ -174,7 +195,7 @@ export default function CoordinatorCoursesPage() {
               Alunos — {selectedCourse?.name}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Alunos matriculados neste curso. Clique em "Ver Detalhes" para acessar o perfil completo.
+              Alunos matriculados neste curso. Clique em &quot;Ver Detalhes&quot; para acessar o perfil completo.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2 max-h-72 overflow-y-auto">
@@ -226,26 +247,15 @@ export default function CoordinatorCoursesPage() {
                 className="h-10 border-slate-200"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Código <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={formCode}
-                onChange={(e) => setFormCode(e.target.value)}
-                placeholder="Ex: MEC-2024"
-                className="h-10 border-slate-200"
-              />
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
             <Button
               onClick={handleCreate}
-              disabled={!formName.trim() || !formCode.trim()}
+              disabled={saving || !formName.trim()}
               className="bg-primary-900 text-white hover:bg-primary-950"
             >
-              Criar Curso
+              {saving ? 'Criando...' : 'Criar Curso'}
             </Button>
           </DialogFooter>
         </DialogContent>
