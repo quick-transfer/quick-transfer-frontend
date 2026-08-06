@@ -1,4 +1,6 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, apiFetchCollection } from "@/lib/api";
+import { mockInterviews, mockPlaces, mockStudents, mockUsers, mockVacancies } from '@/lib/mock-data';
+import { apiFirst, createLocalId, readCollection, writeCollection } from '@/lib/offline-store';
 
 // ── Enumerations ──
 
@@ -39,13 +41,13 @@ export interface VacancyInput {
   shift: VacancyShift;
   // placeId rather than location string — the backend resolves park/section from the Place entity.
   placeId: string;
+  skillIds?: string[];
 }
 
-// Update omits numbersVacancies intentionally: spot count changes go through
-// a separate backend workflow to maintain audit integrity.
 export interface VacancyUpdateInput {
   name: string;
   description: string;
+  numbersVacancies?: number;
   area: VacancyArea;
   shift: VacancyShift;
   placeId: string;
@@ -171,40 +173,182 @@ export const interviewStatusLabels: Record<string, string> = {
 // ── API functions ──
 // IDs are always encodeURIComponent'd to handle UUIDs safely in path segments.
 
+const vacancySeed: Vacancy[] = mockVacancies.map((item) => ({
+  id: item.id,
+  name: item.title,
+  description: `${item.department} - ${item.location}`,
+  numbersVacancies: item.totalSpots,
+  area: 'IT',
+  shift: 'FIRST',
+  park: item.location,
+  section: item.department,
+}));
+
+const placeSeed: Place[] = mockPlaces.map((item) => ({
+  id: item.id,
+  placeName: item.name,
+  park: item.id === 'plc-2' ? 'WEG_II' : 'WEG_I',
+  section: item.code,
+}));
+
+const studentSeed: Student[] = mockStudents.map((item) => ({
+  id: item.id,
+  name: item.name,
+  email: item.email,
+  age: 18,
+  averageGrade: item.performanceGrade,
+  acronym: item.registration,
+  course: item.courseName,
+  statusStudentInterview: 'NOT_ASSOCIATED',
+  hasSeenEmail: false,
+  statusStudent: 'ENROLLED',
+}));
+
+const interviewSeed: Interview[] = mockInterviews.map((item) => ({
+  id: item.id,
+  interviewerName: item.interviewerName,
+  dateTime: `${item.scheduledDate}T${item.scheduledTime}:00`,
+  park: 'WEG I',
+  section: item.vacancyTitle,
+  nameStudent: item.candidateName,
+  nameManager: item.interviewerName,
+  shift: item.scheduledTime,
+}));
+
+const managerSeed: Manager[] = mockUsers
+  .filter((item) => item.role === 'MANAGER')
+  .map((item) => ({
+    id: item.id,
+    name: item.name,
+    username: item.email.split('@')[0],
+    email: item.email,
+    section: 'IT',
+  }));
+
+const coordinatorSeed: Coordinator[] = mockUsers
+  .filter((item) => item.role === 'COORDINATOR')
+  .map((item) => ({
+    id: item.id,
+    name: item.name,
+    username: item.email.split('@')[0],
+    email: item.email,
+  }));
+
 export function getVacancies() {
-  return apiFetch<Vacancy[]>("/vacancy/find/all");
+  return apiFirst(
+    () => apiFetchCollection<Vacancy>('/vacancy/find/all'),
+    () => readCollection('manager-vacancies', vacancySeed)
+  );
+}
+
+export interface VacancyRequirement {
+  id: string;
+  name: string;
+  level: number;
+  priority: boolean;
+  type: 'TECHNICAL' | 'SOCIOEMOTIONAL';
+}
+
+export interface UserUpdateInput {
+  name: string;
+  email: string;
+  username?: string;
+  section?: ManagerSection;
 }
 
 export function getVacancy(id: string) {
-  return apiFetch<Vacancy>(`/vacancy/find/id/${encodeURIComponent(id)}`);
+  return apiFirst(
+    () => apiFetch<Vacancy>(`/vacancy/find/id/${encodeURIComponent(id)}`),
+    () => {
+      const vacancy = readCollection('manager-vacancies', vacancySeed).find((item) => item.id === id);
+      if (!vacancy) throw new Error('Vaga não encontrada.');
+      return vacancy;
+    }
+  );
 }
 
 export function createVacancy(input: VacancyInput) {
-  return apiFetch<Vacancy>("/vacancy/create", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Vacancy>('/vacancy/create', {
+      method: 'POST',
+      // The OpenAPI schema marks skillIds as optional, but the current service
+      // expects a non-null collection and rejects an omitted field with 400.
+      body: JSON.stringify({ ...input, skillIds: input.skillIds ?? [] }),
+    }),
+    () => {
+      const places = readCollection('manager-places', placeSeed);
+      const place = places.find((item) => item.id === input.placeId);
+      const created: Vacancy = {
+        id: createLocalId('vac'), name: input.name, description: input.description,
+        numbersVacancies: input.numbersVacancies, area: input.area, shift: input.shift,
+        park: place?.park ?? '', section: place?.section ?? '',
+      };
+      writeCollection('manager-vacancies', [...readCollection('manager-vacancies', vacancySeed), created]);
+      return created;
+    }
+  );
 }
 
 export function updateVacancy(id: string, input: VacancyUpdateInput) {
-  return apiFetch<Vacancy>(`/vacancy/update/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Vacancy>(`/vacancy/update/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: JSON.stringify(input),
+    }),
+    () => {
+      const places = readCollection('manager-places', placeSeed);
+      const place = places.find((item) => item.id === input.placeId);
+      let updated: Vacancy | undefined;
+      const next = readCollection('manager-vacancies', vacancySeed).map((item) => {
+        if (item.id !== id) return item;
+        updated = { ...item, ...input, park: place?.park ?? item.park, section: place?.section ?? item.section };
+        return updated;
+      });
+      if (!updated) throw new Error('Vaga não encontrada.');
+      writeCollection('manager-vacancies', next);
+      return updated;
+    }
+  );
 }
 
 export function deleteVacancy(id: string) {
-  return apiFetch(`/vacancy/delete/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  return apiFirst(
+    () => apiFetch(`/vacancy/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    () => {
+      const current = readCollection('manager-vacancies', vacancySeed);
+      writeCollection('manager-vacancies', current.filter((item) => item.id !== id));
+      return {};
+    }
+  );
+}
+
+export function getVacancyRequirements(vacancyId: string) {
+  return Promise.resolve(
+    readCollection<VacancyRequirement>(`vacancy-requirements-${vacancyId}`, [])
+  );
+}
+
+export function saveVacancyRequirements(vacancyId: string, requirements: VacancyRequirement[]) {
+  return Promise.resolve(
+    writeCollection(`vacancy-requirements-${vacancyId}`, requirements)
+  );
 }
 
 export function getStudents() {
-  return apiFetch<Student[]>("/student/find/all");
+  return apiFirst(
+    () => apiFetchCollection<Student>('/student/find/all'),
+    () => readCollection('manager-students', studentSeed)
+  );
 }
 
 export function getStudent(id: string) {
-  return apiFetch<Student>(`/student/find/id/${encodeURIComponent(id)}`);
+  return apiFirst(
+    () => apiFetch<Student>(`/student/find/id/${encodeURIComponent(id)}`),
+    () => {
+      const student = readCollection('manager-students', studentSeed).find((item) => item.id === id);
+      if (!student) throw new Error('Aluno não encontrado.');
+      return student;
+    }
+  );
 }
 
 // Only the interview status is patchable here — other student fields are managed
@@ -213,77 +357,213 @@ export function updateStudentInterviewStatus(
   id: string,
   statusStudentInterview: InterviewStatus
 ) {
-  return apiFetch<Student>(`/student/update/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ statusStudentInterview }),
-  });
+  return apiFirst(
+    () => apiFetch<Student>(`/student/update/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: JSON.stringify({ statusStudentInterview }),
+    }),
+    () => {
+      let updated: Student | undefined;
+      const next = readCollection('manager-students', studentSeed).map((item) => {
+        if (item.id !== id) return item;
+        updated = { ...item, statusStudentInterview };
+        return updated;
+      });
+      if (!updated) throw new Error('Aluno não encontrado.');
+      writeCollection('manager-students', next);
+      return updated;
+    }
+  );
 }
 
 // studentName filter is applied server-side; no client-side filtering fallback.
 export function getSkills(studentName?: string) {
-  if (!studentName) return apiFetch<Skill[]>("/skill/find/all");
-  return apiFetch<Skill[]>(
-    `/skill/search?studentName=${encodeURIComponent(studentName)}`
+  const endpoint = studentName
+    ? `/skill/search?studentName=${encodeURIComponent(studentName)}`
+    : '/skill/find/all';
+  return apiFirst(
+    () => apiFetchCollection<Skill>(endpoint),
+    () => {
+      const skills = readCollection<Skill>('manager-skills', []);
+      return studentName ? skills.filter((item) => item.studentName === studentName) : skills;
+    }
   );
 }
 
 export function getPlaces() {
-  return apiFetch<Place[]>("/place/find/all");
+  return apiFirst(
+    () => apiFetchCollection<Place>('/place/find/all'),
+    () => readCollection('manager-places', placeSeed)
+  );
 }
 
 export function createPlace(input: PlaceInput) {
-  return apiFetch<Place>("/place/create", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Place>('/place/create', { method: 'POST', body: JSON.stringify(input) }),
+    () => {
+      const created: Place = { id: createLocalId('plc'), ...input };
+      writeCollection('manager-places', [...readCollection('manager-places', placeSeed), created]);
+      return created;
+    }
+  );
 }
 
 export function updatePlace(id: string, input: PlaceInput) {
-  return apiFetch<Place>(`/place/update/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Place>(`/place/update/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: JSON.stringify(input),
+    }),
+    () => {
+      const updated: Place = { id, ...input };
+      const next = readCollection('manager-places', placeSeed)
+        .map((item) => item.id === id ? updated : item);
+      writeCollection('manager-places', next);
+      return updated;
+    }
+  );
 }
 
 export function deletePlace(id: string) {
-  return apiFetch(`/place/delete/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  });
+  return apiFirst(
+    () => apiFetch(`/place/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    () => {
+      const current = readCollection('manager-places', placeSeed);
+      writeCollection('manager-places', current.filter((item) => item.id !== id));
+      return {};
+    }
+  );
 }
 
 export function getManagers() {
-  return apiFetch<Manager[]>("/manager/find/all");
+  return apiFirst(
+    () => apiFetchCollection<Manager>('/manager/find/all'),
+    () => readCollection('managers', managerSeed)
+  );
+}
+
+export function getCoordinators() {
+  return apiFirst(
+    () => apiFetchCollection<Coordinator>('/coordinator/find/all'),
+    () => readCollection('coordinators', coordinatorSeed)
+  );
 }
 
 /**
  * Creates a manager account. The backend restricts this endpoint to ADMIN sessions.
  */
 export function createManager(input: ManagerInput) {
-  return apiFetch<Manager>("/manager/create", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Manager>('/manager/create', { method: 'POST', body: JSON.stringify(input) }),
+    () => {
+      const created: Manager = {
+        id: createLocalId('mgr'), name: input.name, username: input.username,
+        email: input.email, section: input.section,
+      };
+      writeCollection('managers', [...readCollection('managers', managerSeed), created]);
+      return created;
+    },
+    { neverFallbackStatuses: [400, 401, 403, 404, 409, 422] }
+  );
 }
 
 /**
  * Creates a coordinator account. The backend restricts this endpoint to ADMIN sessions.
  */
 export function createCoordinator(input: CoordinatorInput) {
-  return apiFetch<Coordinator>("/coordinator/create", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Coordinator>('/coordinator/create', { method: 'POST', body: JSON.stringify(input) }),
+    () => {
+      const created: Coordinator = {
+        id: createLocalId('crd'), name: input.name,
+        username: input.username, email: input.email,
+      };
+      writeCollection('coordinators', [...readCollection('coordinators', coordinatorSeed), created]);
+      return created;
+    },
+    { neverFallbackStatuses: [400, 401, 403, 404, 409, 422] }
+  );
+}
+
+export function updateManager(id: string, input: UserUpdateInput) {
+  return apiFirst(
+    () => apiFetch<Manager>(`/manager/update/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: JSON.stringify({ name: input.name, section: input.section }),
+    }),
+    () => {
+      let updated: Manager | undefined;
+      const next = readCollection('managers', managerSeed).map((item) => {
+        if (item.id !== id) return item;
+        updated = { ...item, ...input, section: input.section ?? item.section };
+        return updated;
+      });
+      if (!updated) throw new Error('Gestor não encontrado.');
+      writeCollection('managers', next);
+      return updated;
+    }
+  );
+}
+
+export function deleteManager(id: string) {
+  return apiFirst(
+    () => apiFetch(`/manager/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    () => {
+      writeCollection('managers', readCollection('managers', managerSeed).filter((item) => item.id !== id));
+      return {};
+    }
+  );
+}
+
+export function updateCoordinator(id: string, input: UserUpdateInput) {
+  return apiFirst(
+    () => apiFetch<Coordinator>(`/coordinator/update/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: JSON.stringify({ name: input.name }),
+    }),
+    () => {
+      let updated: Coordinator | undefined;
+      const next = readCollection('coordinators', coordinatorSeed).map((item) => {
+        if (item.id !== id) return item;
+        updated = { ...item, name: input.name, email: input.email, username: input.username ?? item.username };
+        return updated;
+      });
+      if (!updated) throw new Error('Coordenador não encontrado.');
+      writeCollection('coordinators', next);
+      return updated;
+    }
+  );
+}
+
+export function deleteCoordinator(id: string) {
+  return apiFirst(
+    () => apiFetch(`/coordinator/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    () => {
+      writeCollection('coordinators', readCollection('coordinators', coordinatorSeed).filter((item) => item.id !== id));
+      return {};
+    }
+  );
 }
 
 export function getInterviews() {
-  return apiFetch<Interview[]>("/interview/find/all");
+  return apiFirst(
+    () => apiFetchCollection<Interview>('/interview/find/all'),
+    () => readCollection('manager-interviews', interviewSeed)
+  );
 }
 
 export function createInterview(input: InterviewInput) {
-  return apiFetch<Interview>("/interview/create", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
+  return apiFirst(
+    () => apiFetch<Interview>('/interview/create', { method: 'POST', body: JSON.stringify(input) }),
+    () => {
+      const student = readCollection('manager-students', studentSeed).find((item) => item.id === input.studentId);
+      const place = readCollection('manager-places', placeSeed).find((item) => item.id === input.placeId);
+      const created: Interview = {
+        id: createLocalId('int'), interviewerName: input.interviewerName,
+        dateTime: input.dateTime, park: place?.park ?? '', section: place?.section ?? '',
+        nameStudent: student?.name ?? 'Aluno', nameManager: input.interviewerName,
+        shift: new Date(input.dateTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      };
+      writeCollection('manager-interviews', [...readCollection('manager-interviews', interviewSeed), created]);
+      return created;
+    }
+  );
 }
 
 /**
@@ -291,8 +571,11 @@ export function createInterview(input: InterviewInput) {
  * Email is passed as a query param because the endpoint does not accept a body.
  */
 export function sendInterviewEmail(interviewId: string, email: string) {
-  return apiFetch<string>(
-    `/manager/interview/sendEmail/${encodeURIComponent(interviewId)}?email=${encodeURIComponent(email)}`,
-    { method: "POST" }
+  return apiFirst(
+    () => apiFetch<string>(
+      `/manager/interview/sendEmail/${encodeURIComponent(interviewId)}?email=${encodeURIComponent(email)}`,
+      { method: 'POST' }
+    ),
+    () => `Convite registrado para ${email}`
   );
 }

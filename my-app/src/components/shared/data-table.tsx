@@ -67,7 +67,7 @@ type SortDirection = "asc" | "desc" | null;
  * All filtering, sorting, and pagination are done in-memory. Not suitable for
  * datasets where the server must paginate (i.e. > a few hundred rows).
  */
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T>({
   columns,
   data,
   pageSize = 10,
@@ -92,7 +92,7 @@ export function DataTable<T extends Record<string, any>>({
     const query = searchQuery.toLowerCase();
     return data.filter((row) =>
       searchKeys.some((key) => {
-        const val = row[key];
+        const val = (row as Record<string, unknown>)[key];
         return val != null && String(val).toLowerCase().includes(query);
       })
     );
@@ -101,8 +101,8 @@ export function DataTable<T extends Record<string, any>>({
   const sortedData = useMemo(() => {
     if (!sortKey || !sortDir) return filteredData;
     return [...filteredData].sort((a, b) => {
-      const aVal = a[sortKey];
-      const bVal = b[sortKey];
+      const aVal = (a as Record<string, unknown>)[sortKey];
+      const bVal = (b as Record<string, unknown>)[sortKey];
       // Nulls always sort last regardless of direction.
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
@@ -187,6 +187,7 @@ export function DataTable<T extends Record<string, any>>({
                       aria-label={`Ordenar por ${col.header}`}
                     >
                       {col.header}
+                      {getSortIcon(col.key)}
                     </button>
                   ) : (
                     col.header
