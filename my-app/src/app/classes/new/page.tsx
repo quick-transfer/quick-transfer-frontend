@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AppShell, PageHeader } from "@/components/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -15,18 +15,33 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockCourses, mockStudents } from "@/lib/mock-data";
 import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { createClass, getAppStudents, getCourses } from '@/lib/application-api';
+import type { CourseDTO, StudentDTO } from '@/types';
 
 export default function NovaTurmaPage() {
   const router = useRouter();
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  const [className, setClassName] = useState("");
   const [classCode, setClassCode] = useState("");
   const [course, setCourse] = useState("");
   const [period, setPeriod] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [finishDate, setFinishDate] = useState("");
+  const [courses, setCourses] = useState<CourseDTO[]>([]);
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    Promise.all([getCourses(), getAppStudents()])
+      .then(([courseData, studentData]) => {
+        setCourses(courseData);
+        setStudents(studentData);
+      })
+      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os dados.'));
+  }, []);
 
   const toggleStudent = (id: string) => {
     setSelectedStudents((prev) =>
@@ -34,10 +49,33 @@ export default function NovaTurmaPage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Turma "${className}" cadastrada com ${selectedStudents.length} alunos!`);
-    router.push("/admin/classes");
+    const selectedCourse = courses.find((item) => item.id === course);
+    if (!selectedCourse) {
+      setError('Selecione um curso válido.');
+      return;
+    }
+    if (!startDate || !finishDate || finishDate < startDate) {
+      setError('Informe um período de datas válido para a turma.');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      await createClass({
+        name: `${selectedCourse.name} - ${classCode.trim()}`, code: classCode.trim(),
+        courseId: selectedCourse.id, courseName: selectedCourse.name, period,
+        startDate, finishDate,
+        totalStudents: selectedStudents.length, maxStudents: Math.max(25, selectedStudents.length),
+        status: 'PLANNED', studentIds: selectedStudents,
+      });
+      router.push('/classes');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível cadastrar a turma.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -54,13 +92,16 @@ export default function NovaTurmaPage() {
           actions={
             <Link
               href="/classes"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-2 px-4 py-5 border-none")}
+              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
             >
               <ArrowLeft className="size-4" /> Voltar
             </Link>
           }
         />
 
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           <Card className="border-border shadow-sm">
             <CardHeader>
@@ -68,21 +109,10 @@ export default function NovaTurmaPage() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="className">Nome da Turma</Label>
-                <Input
-                  id="className"
-                  placeholder="Ex: Turma - Desenvolvimento Web"
-                  value={className}
-                  onChange={(e) => setClassName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="classCode">Código da Turma</Label>
                 <Input
                   id="classCode"
-                  placeholder="Ex: MI79"
+                  placeholder="Ex: TEL-C-2026"
                   value={classCode}
                   onChange={(e) => setClassCode(e.target.value)}
                   required
@@ -93,10 +123,12 @@ export default function NovaTurmaPage() {
                 <Label htmlFor="course">Curso Associado</Label>
                 <Select value={course} onValueChange={(val) => setCourse(val ?? "")} required>
                   <SelectTrigger id="course">
-                    <SelectValue placeholder="Selecione o curso" />
+                    <SelectValue placeholder="Selecione o curso">
+                      {courses.find((item) => item.id === course)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCourses.map((c) => (
+                    {courses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name} ({c.code})
                       </SelectItem>
@@ -114,9 +146,31 @@ export default function NovaTurmaPage() {
                   <SelectContent>
                     <SelectItem value="Matutino">Matutino (07:30 - 11:30)</SelectItem>
                     <SelectItem value="Vespertino">Vespertino (13:30 - 17:30)</SelectItem>
-                    <SelectItem value="Noturno">Noturno (18:30 - 22:00)</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="startDate">Data inicial</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="finishDate">Data final</Label>
+                <Input
+                  id="finishDate"
+                  type="date"
+                  min={startDate || undefined}
+                  value={finishDate}
+                  onChange={(e) => setFinishDate(e.target.value)}
+                  required
+                />
               </div>
             </CardContent>
           </Card>
@@ -132,7 +186,7 @@ export default function NovaTurmaPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {mockStudents.map((student) => (
+              {students.map((student) => (
                 <div
                   key={student.id}
                   className="flex items-center justify-between rounded-lg border border-border p-3 hover:bg-muted/50 transition-colors"
@@ -159,13 +213,13 @@ export default function NovaTurmaPage() {
 
           <div className="flex justify-end gap-3">
             <Link
-              href="/classes"
-              className={cn(buttonVariants({ variant: "outline" }), "px-4 py-5")}
+              href="/admin/classes"
+              className={buttonVariants({ variant: "outline" })}
             >
               Cancelar
             </Link>
-            <Button type="submit" className="gap-2 bg-primary text-white px-4 py-5 hover:bg-primary-700">
-              <Save className="size-4" /> Cadastrar Turma
+            <Button type="submit" disabled={saving} className="gap-2 bg-primary text-white hover:bg-primary-700">
+              <Save className="size-4" /> {saving ? 'Cadastrando...' : 'Cadastrar Turma'}
             </Button>
           </div>
         </form>
