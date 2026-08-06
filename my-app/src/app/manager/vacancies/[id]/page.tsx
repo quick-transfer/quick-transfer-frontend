@@ -1,33 +1,48 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Lock, Ban } from "lucide-react";
+import { Search, Ban } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InterviewSchedulingModal } from "@/components/features/manager/interview-scheduling-modal";
-import { ToastCard } from "@/components/ui/toast-card";
+import {
+  createInterview,
+  areaLabels,
+  shiftLabels,
+  getManagers,
+  getPlaces,
+  getStudents,
+  getVacancy,
+  getVacancyRequirements,
+  updateVacancy,
+  type Manager,
+  type Place,
+  type VacancyArea,
+  type VacancyShift,
+  type VacancyRequirement,
+} from '@/lib/manager-api';
 
 interface Candidate {
   id: string;
   name: string;
   classGroup: string;
-  matchPercentage: number;
+  matchPercentage?: number;
+  email?: string;
   avatarUrl?: string;
 }
 
-const mockCandidates: Candidate[] = [
-  { id: "std-1", name: "Carlos Silva", classGroup: "Turma TI-2023", matchPercentage: 92 },
-  { id: "std-2", name: "Ana Paula", classGroup: "Turma ENG-2022", matchPercentage: 75 },
-  { id: "std-3", name: "João Pedro", classGroup: "Turma LOG-2024", matchPercentage: 45 },
-  { id: "std-4", name: "Carlos Silva", classGroup: "Turma TI-2023", matchPercentage: 92 },
-  { id: "std-5", name: "Ana Paula", classGroup: "Turma ENG-2022", matchPercentage: 75 },
-  { id: "std-6", name: "João Pedro", classGroup: "Turma LOG-2024", matchPercentage: 45 },
-];
+import { USER_ID_COOKIE_NAME } from '@/lib/auth';
+
+function currentUserId() {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${USER_ID_COOKIE_NAME}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,41 +57,128 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   const [description, setDescription] = useState(
     "Responsável por analisar grandes volumes de dados industriais, gerar relatórios de eficiência e propor otimizações em processos fabris."
   );
-  const [spots] = useState(3);
+  const [spots, setSpots] = useState(0);
   const [candidateSearch, setCandidateSearch] = useState("");
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [places, setPlaces] = useState<Place[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
+  const [placeId, setPlaceId] = useState("");
+  const [shift, setShift] = useState<VacancyShift>('FIRST');
+  const [area, setArea] = useState<VacancyArea>('IT');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const [req1Level, setReq1Level] = useState(8);
   const [req1Priority, setReq1Priority] = useState(true);
 
   const [req2Level, setReq2Level] = useState(7);
   const [req2Priority, setReq2Priority] = useState(false);
+  const [extraRequirements, setExtraRequirements] = useState<VacancyRequirement[]>([]);
 
   // Modo de visualização (somente leitura por padrão) vs modo de edição
   const [isViewMode, setIsViewMode] = useState(true);
 
   // Suporta múltiplos alunos alocados respeitando o limite de vagas (spots)
-  const [assignedStudentIds, setAssignedStudentIds] = useState<string[]>(["std-1"]);
+  const [assignedStudentIds, setAssignedStudentIds] = useState<string[]>([]);
   const [rejectedStudentIds, setRejectedStudentIds] = useState<string[]>([]);
   const isEditing = resolvedParams.id !== "new" && resolvedParams.id !== "vac-new";
 
   // Estado do Modal de Agendamento de Entrevista e Notificações
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(mockCandidates[0]);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [interviewSuccessMessage, setInterviewSuccessMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      getVacancy(resolvedParams.id),
+      getStudents(),
+      getPlaces(),
+      getManagers(),
+      getVacancyRequirements(resolvedParams.id),
+    ]).then(([vacancy, studentData, placeData, managerData, requirements]) => {
+      if (!active) return;
+      setJobTitle(vacancy.name);
+      setDepartment(areaLabels[vacancy.area] ?? vacancy.area);
+      setArea(vacancy.area as VacancyArea);
+      setDescription(vacancy.description);
+      setSpots(vacancy.numbersVacancies);
+      setShift(vacancy.shift as VacancyShift);
+      setPlaces(placeData);
+      const authenticatedManager = managerData.find((manager) => manager.id === currentUserId());
+      setManagers(authenticatedManager ? [authenticatedManager] : []);
+      const technical = requirements.find((item) => item.id === 'python');
+      const socioemotional = requirements.find((item) => item.id === 'problem-solving');
+      if (technical) {
+        setReq1Level(technical.level);
+        setReq1Priority(technical.priority);
+      }
+      if (socioemotional) {
+        setReq2Level(socioemotional.level);
+        setReq2Priority(socioemotional.priority);
+      }
+      setExtraRequirements(requirements.filter((item) => item.id !== 'python' && item.id !== 'problem-solving'));
+      const selectedPlace = placeData.find(
+        (item) => item.park === vacancy.park && item.section === vacancy.section
+      );
+      setPlaceId(selectedPlace?.id ?? placeData[0]?.id ?? '');
+      setCandidates(studentData.map((student) => ({
+        id: student.id,
+        name: student.name,
+        email: student.email,
+        classGroup: student.course,
+        matchPercentage: student.averageGrade == null
+          ? undefined
+          : Math.round(student.averageGrade * 10),
+      })));
+      setAssignedStudentIds([]);
+      setRejectedStudentIds([]);
+    }).catch((loadError) => {
+      if (active) setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar a vaga.');
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [resolvedParams.id]);
 
   const handleOpenInterviewModal = (candidate?: Candidate) => {
     if (candidate) setSelectedCandidate(candidate);
     setIsModalOpen(true);
   };
 
-  const handleConfirmInterview = (data: { date: string; time: string; notes: string; vacancyId: string }) => {
+  const handleConfirmInterview = async (data: { date: string; time: string; vacancyId: string }) => {
+    if (!selectedCandidate) throw new Error('Selecione um candidato.');
+    if (!managers[0]) throw new Error('Não foi possível identificar o gestor autenticado.');
+    await createInterview({
+      interviewerName: managers[0].name,
+      dateTime: `${data.date}T${data.time}:00`,
+      placeId,
+      studentId: selectedCandidate.id,
+      managerId: managers[0].id,
+      vacancyId: resolvedParams.id,
+    });
     setInterviewSuccessMessage(
-      `Entrevista agendada com sucesso para ${selectedCandidate?.name} no dia ${data.date} às ${data.time}! O coordenador foi notificado por e-mail.`
+      `Entrevista agendada com sucesso para ${selectedCandidate?.name} no dia ${data.date} às ${data.time}.`
     );
     setTimeout(() => setInterviewSuccessMessage(""), 6000);
   };
 
-  const handleSaveVacancy = () => {
+  const handleSaveVacancy = async () => {
+    setError('');
+    try {
+      await updateVacancy(resolvedParams.id, {
+        name: jobTitle.trim(),
+        description: description.trim(),
+        numbersVacancies: spots,
+        area,
+        shift,
+        placeId,
+      });
+      setIsViewMode(true);
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível atualizar a vaga.');
+      return;
+    }
     setInterviewSuccessMessage(
       isEditing ? "Alterações da vaga salvas com sucesso!" : "Vaga criada com sucesso!"
     );
@@ -86,45 +188,20 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   const handleAssignStudent = (candidate: Candidate, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const isAlreadyAssigned = assignedStudentIds.includes(candidate.id);
-
-    if (isAlreadyAssigned) {
-      setAssignedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
-      setInterviewSuccessMessage(`Aluno ${candidate.name} removido da vaga.`);
-    } else {
-      if (assignedStudentIds.length >= spots) {
-        setInterviewSuccessMessage(
-          `Limite máximo de vagas (${spots}) atingido! Remova um aluno para adicionar outro.`
-        );
-        setTimeout(() => setInterviewSuccessMessage(""), 5000);
-        return;
-      }
-      setAssignedStudentIds((prev) => [...prev, candidate.id]);
-      setRejectedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
-      setInterviewSuccessMessage(`Aluno ${candidate.name} alocado nesta vaga com sucesso! (${assignedStudentIds.length + 1}/${spots})`);
-    }
-    setTimeout(() => setInterviewSuccessMessage(""), 5000);
+    setError(
+      `Não é possível alocar ${candidate.name}: a API não informa a qual vaga o aluno está associado. A ação foi bloqueada para evitar um vínculo global incorreto.`
+    );
   };
 
   const handleRejectCandidate = (candidate: Candidate, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const isRejected = rejectedStudentIds.includes(candidate.id);
-
-    if (isRejected) {
-      setRejectedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
-      setInterviewSuccessMessage(`Candidatura de ${candidate.name} restaurada para esta vaga.`);
-    } else {
-      setRejectedStudentIds((prev) => [...prev, candidate.id]);
-      setAssignedStudentIds((prev) => prev.filter((id) => id !== candidate.id));
-      setInterviewSuccessMessage(`Candidato ${candidate.name} recusado para esta vaga.`);
-    }
-    setTimeout(() => setInterviewSuccessMessage(""), 5000);
+    setError(
+      `Não é possível recusar ${candidate.name} nesta vaga: a API só permite alterar o status global do aluno.`
+    );
   };
 
-  const filteredCandidates = mockCandidates.filter((c) =>
+  const filteredCandidates = candidates.filter((c) =>
     c.name.toLowerCase().includes(candidateSearch.toLowerCase())
   );
 
@@ -137,6 +214,16 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
       ]}
     >
       <div className="space-y-6 pb-12">
+        {loading && (
+          <div className="rounded-lg border bg-white p-4 text-sm text-slate-500">
+            Carregando dados da vaga...
+          </div>
+        )}
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
         {/* Cabeçalho da Vaga */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
           <div>
@@ -197,6 +284,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                   <Input
                     value={jobTitle}
                     onChange={(e) => setJobTitle(e.target.value)}
+                    disabled={isViewMode}
                     className="h-10 bg-white border-slate-200 rounded-lg text-sm font-medium"
                   />
                 </div>
@@ -207,7 +295,13 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                   </label>
                   <select
                     value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
+                    onChange={(e) => {
+                      setDepartment(e.target.value);
+                      const selectedArea = Object.entries(areaLabels)
+                        .find(([, label]) => label === e.target.value)?.[0];
+                      if (selectedArea) setArea(selectedArea as VacancyArea);
+                    }}
+                    disabled={isViewMode}
                     className="h-10 w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="Tecnologia da Informação">Tecnologia da Informação</option>
@@ -226,28 +320,66 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                   rows={4}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  disabled={isViewMode}
                   className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1.5 flex items-center gap-1">
-                  Número de Vagas <Lock className="size-3.5 text-slate-400" />
+                  Número de Vagas
                 </label>
                 <Input
-                  disabled
+                  type="number"
+                  min={1}
+                  disabled={isViewMode}
                   value={spots}
-                  className="h-10 w-32 bg-slate-100 border-slate-200 rounded-lg text-sm font-medium text-slate-600"
+                  onChange={(event) => setSpots(Math.max(1, Number(event.target.value)))}
+                  className="h-10 w-32 border-slate-200 rounded-lg text-sm font-medium"
                 />
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+                  Local
+                  <select
+                    value={placeId}
+                    onChange={(event) => setPlaceId(event.target.value)}
+                    disabled={isViewMode}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                  >
+                    {places.map((place) => (
+                      <option key={place.id} value={place.id}>{place.placeName}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="space-y-1.5 text-xs font-semibold text-slate-600">
+                  Turno
+                  <select
+                    value={shift}
+                    onChange={(event) => setShift(event.target.value as VacancyShift)}
+                    disabled={isViewMode}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm"
+                  >
+                    {Object.entries(shiftLabels).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
             </div>
 
-            {/* Bloco 2: Requisitos */}
+            {/* Requisitos ainda não possuem persistência completa no contrato atual. */}
+            {false && (
             <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-bold text-slate-900">Requisitos</h2>
                 <button
                   type="button"
+                  disabled={isViewMode}
+                  onClick={() => setExtraRequirements((current) => [
+                    ...current,
+                    { id: `req-${Date.now()}`, name: 'Novo requisito', level: 5, priority: false, type: 'TECHNICAL' },
+                  ])}
                   className="text-xs font-semibold text-primary-800 hover:text-primary-950 flex items-center gap-1"
                 >
                   + Adicionar
@@ -271,6 +403,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                         value={[req1Level]}
                         max={10}
                         step={1}
+                        disabled={isViewMode}
                         onValueChange={(val) => setReq1Level(val[0])}
                         className="flex-1"
                       />
@@ -283,6 +416,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                       <span className="text-xs font-medium text-slate-600">Prioridade</span>
                       <Switch
                         checked={req1Priority}
+                        disabled={isViewMode}
                         onCheckedChange={setReq1Priority}
                       />
                     </div>
@@ -307,6 +441,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                         value={[req2Level]}
                         max={10}
                         step={1}
+                        disabled={isViewMode}
                         onValueChange={(val) => setReq2Level(val[0])}
                         className="flex-1"
                       />
@@ -319,13 +454,53 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                       <span className="text-xs font-medium text-slate-600">Prioridade</span>
                       <Switch
                         checked={req2Priority}
+                        disabled={isViewMode}
                         onCheckedChange={setReq2Priority}
                       />
                     </div>
                   </div>
                 </div>
               </div>
+              {extraRequirements.map((requirement) => (
+                <div key={requirement.id} className="rounded-lg border border-slate-200 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <Input
+                      value={requirement.name}
+                      disabled={isViewMode}
+                      onChange={(event) => setExtraRequirements((current) => current.map((item) =>
+                        item.id === requirement.id ? { ...item, name: event.target.value } : item
+                      ))}
+                      className="sm:max-w-xs"
+                    />
+                    <div className="flex flex-1 items-center gap-3">
+                      <span className="text-xs font-medium">Nível {requirement.level}</span>
+                      <Slider
+                        value={[requirement.level]}
+                        max={10}
+                        step={1}
+                        disabled={isViewMode}
+                        onValueChange={(value) => setExtraRequirements((current) => current.map((item) =>
+                          item.id === requirement.id ? { ...item, level: value[0] } : item
+                        ))}
+                      />
+                      <Switch
+                        checked={requirement.priority}
+                        disabled={isViewMode}
+                        onCheckedChange={(checked) => setExtraRequirements((current) => current.map((item) =>
+                          item.id === requirement.id ? { ...item, priority: checked } : item
+                        ))}
+                      />
+                    </div>
+                    {!isViewMode && (
+                      <button type="button" onClick={() => setExtraRequirements((current) => current.filter((item) => item.id !== requirement.id))} className="text-xs font-semibold text-red-600">
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
+            )}
           </div>
 
           {/* Painel Direito - Candidatos Recomendados */}
@@ -352,9 +527,12 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
               {filteredCandidates.map((candidate, idx) => {
                 const isAssigned = assignedStudentIds.includes(candidate.id);
                 const isRejected = rejectedStudentIds.includes(candidate.id);
-                let badgeStyle = "text-emerald-600 border-emerald-300 bg-emerald-50";
-                if (candidate.matchPercentage < 50) badgeStyle = "text-destructive border-rose-300 bg-rose-50";
-                else if (candidate.matchPercentage < 80) badgeStyle = "text-amber-600 border-amber-300 bg-amber-50";
+                let badgeStyle = "text-slate-600 border-slate-300 bg-slate-50";
+                if (candidate.matchPercentage != null) {
+                  badgeStyle = "text-emerald-600 border-emerald-300 bg-emerald-50";
+                  if (candidate.matchPercentage < 50) badgeStyle = "text-rose-600 border-rose-300 bg-rose-50";
+                  else if (candidate.matchPercentage < 80) badgeStyle = "text-amber-600 border-amber-300 bg-amber-50";
+                }
 
                 return (
                   <div
@@ -389,7 +567,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                       <span
                         className={`text-xs font-bold px-2 py-0.5 rounded-full border ${badgeStyle}`}
                       >
-                        {candidate.matchPercentage}%
+                        {candidate.matchPercentage == null ? "Nota não informada" : `${candidate.matchPercentage}%`}
                       </span>
                     </div>
 
@@ -436,7 +614,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                           className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition flex items-center gap-1 ${
                             isRejected
                               ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
-                              : "bg-destructive text-white border-rose-600 hover:bg-rose-700"
+                              : "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
                           }`}
                         >
                           <Ban className="size-3" />
@@ -458,12 +636,17 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
             onClose={() => setIsModalOpen(false)}
             candidateName={selectedCandidate.name}
             vacancyTitle={jobTitle}
+            vacancyId={resolvedParams.id}
             onConfirm={handleConfirmInterview}
           />
         )}
 
         {/* Banner de Notificação de Sucesso */}
-        <ToastCard message={interviewSuccessMessage} variant="success" />
+        {interviewSuccessMessage && (
+          <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium animate-in fade-in slide-in-from-top-4">
+            {interviewSuccessMessage}
+          </div>
+        )}
       </div>
     </AppShell>
   );
