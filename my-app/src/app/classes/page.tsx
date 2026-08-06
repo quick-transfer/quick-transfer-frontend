@@ -1,65 +1,26 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-import { mockClasses } from "@/lib/mock-data";
+import { buttonVariants } from "@/components/ui/button";
 import type { ClassDTO } from "@/types";
-import { ToastCard } from "@/components/ui/toast-card";
-import { GraduationCap, Edit, Trash2, Plus, Search, Users, Eye } from "lucide-react";
+import { Plus, GraduationCap, Eye } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { mockCourses, mockStudents } from "@/lib/mock-data";
-import { Save, ArrowLeft } from "lucide-react";
+import { getClasses } from '@/lib/application-api';
 
 export default function TurmasPage() {
-  const router = useRouter();
-  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
-  const [className, setClassName] = useState("");
-  const [classCode, setClassCode] = useState("");
-  const [course, setCourse] = useState("");
-  const [period, setPeriod] = useState("");
-  const [isNewOpen, setIsNewOpen] = useState(false);
-  const [formName, setFormName] = useState("");
-  const [formCode, setFormCode] = useState("");
-  const [successMsg, setSuccessMsg] = useState("");
+  const [classes, setClasses] = useState<ClassDTO[]>([]);
+  const [error, setError] = useState('');
 
-  const toggleStudent = (id: string) => {
-    setSelectedStudents((prev) =>
-      prev.includes(id) ? prev.filter((sId) => sId !== id) : [...prev, id]
-    );
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!className.trim() || !classCode.trim() || !course || !period) {
-      setSuccessMsg("Preencha todos os campos obrigatórios (*).");
-      setTimeout(() => setSuccessMsg(""), 7000);
-      return;
-    }
-    setClassName("");
-    setClassCode("");
-    setCourse("");
-    setPeriod("");
-    setSelectedStudents([]);
-    setSuccessMsg("Turma criada com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 7000);
-  };
-
+  useEffect(() => {
+    getClasses().then(setClasses).catch((loadError) => {
+      setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar as turmas.');
+    });
+  }, []);
   const columns: DataTableColumn<ClassDTO>[] = [
     {
       key: "name",
@@ -98,6 +59,7 @@ export default function TurmasPage() {
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-medium text-foreground">
             <span>{cls.totalStudents} / {cls.maxStudents}</span>
+            <span>{Math.round((cls.totalStudents / cls.maxStudents) * 100)}%</span>
           </div>
           <div className="h-1.5 w-32 rounded-full bg-slate-100 overflow-hidden">
             <div
@@ -143,102 +105,27 @@ export default function TurmasPage() {
         <PageHeader
           title="Turmas"
           description="Gerenciamento das turmas ativas e planejadas dos programas de aprendizagem"
+          actions={
+            <Link
+              href="/classes/new"
+              className={cn(buttonVariants({ variant: "default" }), "gap-2 bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
+            >
+              <Plus className="size-4" /> Nova Turma
+            </Link>
+          }
         />
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Lado Esquerdo - Tabela de Turmas */}
-          <div className="lg:col-span-2 space-y-4">
-            <DataTable
-              columns={columns}
-              data={mockClasses}
-              pageSize={10}
-              searchable
-              searchPlaceholder="Buscar turma por nome, código ou curso..."
-              searchKeys={["name", "code", "courseName"]}
-              getRowKey={(row) => row.id}
-            />
-          </div>
-
-          {/* Lado Direito - Cadastrar Turma */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Cadastrar Turma</h2>
-              <p className="text-xs text-slate-500">Preencha os dados da turma para efetuar o cadastro.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <Label htmlFor="className" className="text-xs font-semibold text-slate-700">
-                  Nome da Turma <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="className"
-                  placeholder="Ex: Turma - Desenvolvimento Web"
-                  value={className}
-                  onChange={(e) => setClassName(e.target.value)}
-                  className="mt-1 h-10 border-slate-200 text-sm"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="classCode" className="text-xs font-semibold text-slate-700">
-                  Código da Turma <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="classCode"
-                  placeholder="Ex: MI79"
-                  value={classCode}
-                  onChange={(e) => setClassCode(e.target.value)}
-                  className="mt-1 h-10 border-slate-200 text-sm"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="course" className="text-xs font-semibold text-slate-700">
-                  Curso Associado <span className="text-red-500">*</span>
-                </Label>
-                <Select value={course} onValueChange={(val) => setCourse(val ?? "")}>
-                  <SelectTrigger id="course" className="mt-1 h-10 border-slate-200 text-sm">
-                    <SelectValue placeholder="Selecione o curso" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {mockCourses.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.code})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="period" className="text-xs font-semibold text-slate-700">
-                  Período de Aulas <span className="text-red-500">*</span>
-                </Label>
-                <Select value={period} onValueChange={(val) => setPeriod(val ?? "")}>
-                  <SelectTrigger id="period" className="mt-1 h-10 border-slate-200 text-sm">
-                    <SelectValue placeholder="Selecione o período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Matutino">Matutino (07:30 - 11:30)</SelectItem>
-                    <SelectItem value="Vespertino">Vespertino (13:30 - 17:30)</SelectItem>
-                    <SelectItem value="Noturno">Noturno (18:30 - 22:00)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={!className.trim() || !classCode.trim() || !course || !period}
-                className="w-full bg-primary-900 text-white hover:bg-primary-950 gap-2 h-10 mt-2"
-              >
-                <Save className="size-4" /> Cadastrar Turma
-              </Button>
-            </form>
-          </div>
-        </div>
+        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        <DataTable
+          columns={columns}
+          data={classes}
+          pageSize={10}
+          searchable
+          searchPlaceholder="Buscar turma por nome, código ou curso..."
+          searchKeys={["name", "code", "courseName"]}
+          getRowKey={(row) => row.id}
+        />
       </div>
-      <ToastCard message={successMsg} variant="success" />
     </AppShell>
   );
 }
