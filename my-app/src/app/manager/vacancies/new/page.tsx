@@ -136,7 +136,7 @@ export default function NovaVagaPage() {
             </button>
           </div>
           <p className="text-xs text-slate-500">
-            Nenhum requisito adicionado ainda. Clique em "+ Adicionar Requisito" para definir as competências e habilidades necessárias para a vaga.
+            Nenhum requisito adicionado ainda. Clique em &quot;+ Adicionar Requisito&quot; para definir as competências e habilidades necessárias para a vaga.
           </p>
         </div>
       </div>

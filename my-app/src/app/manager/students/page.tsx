@@ -13,7 +13,7 @@ import { Eye, UserCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ManagerStudentsPage() {
-  const [assignedStudents, setAssignedStudents] = useState<Record<string, string>>({
+  const [assignedStudents] = useState<Record<string, string>>({
     "std-1": "Analista de Dados Sênior",
   });
 

@@ -6,16 +6,16 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 import type { UserRole } from "@/types";
 import { Separator } from "@base-ui/react/separator";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 // Accepts Portuguese aliases from the backend alongside the canonical English values.
 function normalizeRole(roleStr?: string | null): UserRole {
-  if (!roleStr) return "ADMIN";
+  if (!roleStr) return "COORDINATOR";
   const upper = roleStr.toUpperCase();
   if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
   if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
   if (upper === "STUDENT" || upper === "ALUNO") return "STUDENT";
-  return "ADMIN";
+  return "COORDINATOR";
 }
 
 // Reads the role from the JS-readable cookie rather than from a server prop.
@@ -24,7 +24,7 @@ function normalizeRole(roleStr?: string | null): UserRole {
 // SSR guard (`typeof document === "undefined"`) prevents crashes during Next.js
 // static generation, which runs in Node where `document` doesn't exist.
 function getRoleFromCookie(): UserRole {
-  if (typeof document === "undefined") return "ADMIN";
+  if (typeof document === "undefined") return "COORDINATOR";
   const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${ROLE_COOKIE_NAME}=([^;]*)`));
   return normalizeRole(match?.[1]);
 }
@@ -35,13 +35,11 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
-  // Initialize to ADMIN to avoid a flash of wrong nav during hydration.
-  // The useEffect immediately reads the real role from the cookie on mount.
-  const [role, setRole] = useState<UserRole>("ADMIN");
-
-  useEffect(() => {
-    setRole(getRoleFromCookie());
-  }, []);
+  const role = useSyncExternalStore(
+    () => () => undefined,
+    getRoleFromCookie,
+    () => "COORDINATOR" as UserRole
+  );
 
   const roleLabels: Record<UserRole, string> = {
     ADMIN: "Administrador",

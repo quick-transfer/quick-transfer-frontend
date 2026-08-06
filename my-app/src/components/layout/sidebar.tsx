@@ -191,18 +191,18 @@ const navigation: SidebarNavSection[] = [
 // Unmapped values default to ADMIN so the admin always sees everything —
 // safer than hiding nav items for an unknown role.
 function normalizeRole(roleStr?: UserRole | string | null): UserRole {
-  if (!roleStr) return "ADMIN";
+  if (!roleStr) return "COORDINATOR";
   const upper = roleStr.toUpperCase();
   if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
   if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
-  return "ADMIN";
+  return "COORDINATOR";
 }
 
 interface SidebarProps {
   currentRole?: UserRole | string;
 }
 
-export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
+export function Sidebar({ currentRole = "COORDINATOR" }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 

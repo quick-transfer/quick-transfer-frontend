@@ -174,7 +174,7 @@ export default function CoordinatorCoursesPage() {
               Alunos — {selectedCourse?.name}
             </DialogTitle>
             <DialogDescription className="text-xs text-slate-500">
-              Alunos matriculados neste curso. Clique em "Ver Detalhes" para acessar o perfil completo.
+              Alunos matriculados neste curso. Clique em &quot;Ver Detalhes&quot; para acessar o perfil completo.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2 max-h-72 overflow-y-auto">
