@@ -1,193 +1,97 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { FormEvent, useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-// Hardcoded pending API integration — these should eventually come from
-// getVacancies() filtered to status === "OPEN" for the current manager's section.
-const openVacancies = [
-  { id: "vac-1", title: "Montador de Painéis Elétricos" },
-  { id: "vac-2", title: "Técnico de Automação Jr" },
-];
+import { getVacancies, type VacancyResponse } from "@/lib/core-api";
+import { createInterview, getCurrentUser, sendInterviewEmail, type InterviewResponse } from "@/lib/selection-api";
 
 interface InterviewSchedulingModalProps {
   isOpen: boolean;
   onClose: () => void;
+  candidateId: string;
   candidateName: string;
-  // When provided, the vacancy is pre-selected and the dropdown is replaced with
-  // a read-only display — used when opening the modal from a vacancy's student list.
+  applicationId?: string;
+  vacancyId?: string;
   vacancyTitle?: string;
-  onConfirm: (data: { date: string; time: string; notes: string; vacancyId: string }) => void;
+  onConfirm: (interview: InterviewResponse) => void;
 }
 
 export function InterviewSchedulingModal({
   isOpen,
   onClose,
+  candidateId,
   candidateName,
+  applicationId,
+  vacancyId,
   vacancyTitle,
   onConfirm,
 }: InterviewSchedulingModalProps) {
+  const [vacancies, setVacancies] = useState<VacancyResponse[]>([]);
+  const [interviewerName, setInterviewerName] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [selectedVacancyId, setSelectedVacancyId] = useState(openVacancies[0]?.id ?? "");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedVacancyId, setSelectedVacancyId] = useState(vacancyId ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  // "sv-SE" locale produces YYYY-MM-DD, which is the format <input type="date"> requires.
-  const today = new Date();
-  const todayStr = today.toLocaleDateString("sv-SE");
+  useEffect(() => {
+    if (!isOpen) return;
+    let mounted = true;
+    Promise.all([getVacancies({ size: 200, sort: "name,asc" }), getCurrentUser()])
+      .then(([vacancyResponse, user]) => {
+        if (!mounted) return;
+        const open = vacancyResponse.filter((vacancy) => vacancy.status !== "CLOSED");
+        setVacancies(open);
+        setInterviewerName(user.name);
+        setSelectedVacancyId(vacancyId ?? open[0]?.id ?? "");
+      })
+      .catch((requestError) => mounted && setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar o agendamento."));
+    return () => { mounted = false; };
+  }, [isOpen, vacancyId]);
 
-  // Business rule: interviews may not be scheduled more than 1 year out to
-  // prevent phantom bookings from blocking calendar slots indefinitely.
-  const maxDate = new Date();
-  maxDate.setFullYear(today.getFullYear() + 1);
-  const maxDateStr = maxDate.toLocaleDateString("sv-SE");
+  const today = new Date().toLocaleDateString("sv-SE");
+  const maxDateValue = new Date();
+  maxDateValue.setFullYear(maxDateValue.getFullYear() + 1);
+  const maxDate = maxDateValue.toLocaleDateString("sv-SE");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // String comparison works here because both dates are YYYY-MM-DD — ISO 8601
-    // lexicographic order equals chronological order.
-    if (date < todayStr || date > maxDateStr) {
-      alert("Selecione uma data entre hoje e no máximo 1 ano a partir de hoje.");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // TODO: Replace setTimeout with a real createInterview() + sendInterviewEmail()
-    // call once the coordinator notification endpoint is ready.
-    setTimeout(() => {
-      onConfirm({ date, time, notes, vacancyId: selectedVacancyId });
-      setIsSubmitting(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedVacancyId) { setError("Selecione uma vaga."); return; }
+    setSubmitting(true);
+    setError("");
+    try {
+      const interview = await createInterview({
+        interviewerName,
+        dateTime: `${date}T${time}:00`,
+        studentId: candidateId,
+        vacancyId: selectedVacancyId,
+        applicationId,
+        notes,
+      });
+      try {
+        await sendInterviewEmail(interview.id);
+      } catch {
+        // The interview is already persisted; the manager can retry the invitation from the list.
+      }
+      onConfirm(interview);
+      setDate("");
+      setTime("");
+      setNotes("");
       onClose();
-    }, 600);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Não foi possível agendar a entrevista.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md bg-white border border-slate-200">
-        <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-slate-900">
-            Agendar Entrevista
-          </DialogTitle>
-          <DialogDescription className="text-xs text-slate-500">
-            Agende uma entrevista com <strong className="text-slate-800">{candidateName}</strong>. O coordenador responsável será notificado por e-mail.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          {/* Seleção de Vaga em Aberto */}
-          <div className="space-y-1.5">
-            <Label htmlFor="interview-vacancy" className="text-xs font-semibold text-slate-700">
-              Vaga em Aberto
-            </Label>
-            {vacancyTitle ? (
-              // Read-only display when the vacancy context is already known.
-              <div className="h-10 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 font-medium">
-                {vacancyTitle}
-              </div>
-            ) : (
-              <select
-                id="interview-vacancy"
-                value={selectedVacancyId}
-                onChange={(e) => setSelectedVacancyId(e.target.value)}
-                required
-                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {openVacancies.map((v) => (
-                  <option key={v.id} value={v.id}>{v.title}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="interview-date"
-                className="text-xs font-semibold text-slate-700"
-              >
-                Data
-              </Label>
-              <Input
-                id="interview-date"
-                type="date"
-                required
-                min={todayStr}
-                max={maxDateStr}
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="h-10 text-sm bg-white border-slate-200"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label
-                htmlFor="interview-time"
-                className="text-xs font-semibold text-slate-700"
-              >
-                Horário
-              </Label>
-              <Input
-                id="interview-time"
-                type="time"
-                required
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="h-10 text-sm bg-white border-slate-200"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="interview-notes"
-              className="text-xs font-semibold text-slate-700"
-            >
-              Observações / Pauta
-            </Label>
-            <textarea
-              id="interview-notes"
-              rows={3}
-              placeholder="Adicione informações adicionais para o coordenador ou candidato..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-2.5 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          <DialogFooter className="pt-2 gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="border-slate-200 text-slate-700 hover:bg-slate-100"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-primary-900 text-white hover:bg-primary-950"
-            >
-              {isSubmitting
-                ? "Agendando..."
-                : "Confirmar e Notificar Coordenador"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && !submitting && onClose()}>
+      <DialogContent className="sm:max-w-md"><form onSubmit={submit} className="space-y-4"><DialogHeader><DialogTitle>Agendar Entrevista</DialogTitle><DialogDescription>Agende a entrevista com <strong>{candidateName}</strong>. O convite será enviado após a confirmação.</DialogDescription></DialogHeader>{error && <div role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}<label className="space-y-1.5"><Label>Vaga</Label>{vacancyId ? <div className="flex h-10 items-center rounded-md border bg-slate-50 px-3 text-sm">{vacancyTitle ?? vacancies.find((vacancy) => vacancy.id === vacancyId)?.name}</div> : <select required className="h-10 w-full rounded-md border px-3 text-sm" value={selectedVacancyId} onChange={(event) => setSelectedVacancyId(event.target.value)}><option value="">Selecione</option>{vacancies.map((vacancy) => <option key={vacancy.id} value={vacancy.id}>{vacancy.name}</option>)}</select>}</label><label className="space-y-1.5"><Label>Entrevistador</Label><Input required value={interviewerName} onChange={(event) => setInterviewerName(event.target.value)} /></label><div className="grid grid-cols-2 gap-3"><label className="space-y-1.5"><Label>Data</Label><Input required type="date" min={today} max={maxDate} value={date} onChange={(event) => setDate(event.target.value)} /></label><label className="space-y-1.5"><Label>Horário</Label><Input required type="time" value={time} onChange={(event) => setTime(event.target.value)} /></label></div><label className="space-y-1.5"><Label>Observações</Label><textarea className="w-full rounded-md border p-2 text-sm" rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} /></label><DialogFooter><Button type="button" variant="outline" onClick={onClose} disabled={submitting}>Cancelar</Button><Button type="submit" disabled={submitting}>{submitting ? "Agendando..." : "Agendar e enviar convite"}</Button></DialogFooter></form></DialogContent>
     </Dialog>
   );
 }

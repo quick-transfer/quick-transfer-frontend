@@ -1,240 +1,64 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useState } from "react";
+import Link from "next/link";
 import { AppShell, PageHeader } from "@/components/layout";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
-import { Calendar, Wrench, CheckCircle, UserPlus, ArrowLeft } from "lucide-react";
-import { mockStudents } from "@/lib/mock-data";
-import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { InterviewSchedulingModal } from "@/components/features/manager/interview-scheduling-modal";
+import { getStudent, type StudentResponse } from "@/lib/core-api";
+import { getSkills, type Skill } from "@/lib/manager-api";
+import { getApplications, type InterviewResponse, type VacancyApplicationResponse } from "@/lib/selection-api";
+import { ArrowLeft, CalendarClock, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface PageProps {
-  params: Promise<{ id: string }>;
-}
+interface PageProps { params: Promise<{ id: string }>; }
 
 export default function ManagerStudentDetailPage({ params }: PageProps) {
-  const resolvedParams = use(params);
+  const { id } = use(params);
+  const [student, setStudent] = useState<StudentResponse | null>(null);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [applications, setApplications] = useState<VacancyApplicationResponse[]>([]);
+  const [selected, setSelected] = useState<VacancyApplicationResponse | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const student = mockStudents.find((s) => s.id === resolvedParams.id) || mockStudents[0];
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([getStudent(id), getApplications({ size: 500 }), getSkills()])
+      .then(([studentResponse, applicationResponse, skillResponse]) => {
+        if (!mounted) return;
+        setStudent(studentResponse);
+        setApplications(applicationResponse.filter((application) => application.studentId === id));
+        setSkills(skillResponse.filter((skill) => skill.studentName === studentResponse.name));
+      })
+      .catch((requestError) => mounted && setError(requestError instanceof Error ? requestError.message : "Não foi possível carregar o aluno."));
+    return () => { mounted = false; };
+  }, [id]);
+
+  const interviewCreated = (interview: InterviewResponse) => {
+    setApplications((current) => current.map((application) => application.id === interview.applicationId ? { ...application, status: "INTERVIEW_SCHEDULED", interviewId: interview.id } : application));
+    setNotice(`Entrevista para ${interview.vacancyName} agendada com sucesso.`);
+  };
+
+  if (!student) return <AppShell><div className="p-8 text-sm text-muted-foreground">{error || "Carregando aluno..."}</div></AppShell>;
+  const initials = student.name.split(" ").map((part) => part[0]).slice(0, 2).join("");
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Gestor" },
-        { label: "Alunos", href: "/manager/students" },
-        { label: student.name },
-      ]}
-    >
+    <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Alunos", href: "/manager/students" }, { label: student.name }]}>
       <div className="space-y-6">
-        <PageHeader
-          title={`Detalhes do Aluno: ${student.name}`}
-          description={`Matrícula: ${student.registration}`}
-          actions={
-            <Link
-              href="/manager/students"
-              className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
-            >
-              <ArrowLeft className="size-4" /> Voltar
-            </Link>
-          }
-        />
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Coluna Esquerda: Informações & Habilidades */}
-          <div className="space-y-6">
-            {/* Card Perfil Básico */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm flex flex-col items-center text-center space-y-4">
-              <Avatar className="size-28 border-4 border-slate-100 shadow-md">
-                <AvatarImage src={`https://i.pravatar.cc/150?u=${student.name}`} />
-                <AvatarFallback className="bg-primary-800 text-white font-bold text-2xl">
-                  {student.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-
-              <h2 className="text-xl font-bold text-slate-900">{student.name}</h2>
-
-              <div className="w-full space-y-2 text-sm pt-2 border-t border-slate-100">
-                <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500 uppercase text-xs font-semibold">TURMA</span>
-                  <span className="font-bold text-slate-800">{student.className}</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-slate-50">
-                  <span className="text-slate-500 uppercase text-xs font-semibold">CURSO</span>
-                  <span className="font-bold text-slate-800">{student.courseName}</span>
-                </div>
-                <div className="flex justify-between py-1">
-                  <span className="text-slate-500 uppercase text-xs font-semibold">STATUS</span>
-                  <Badge variant="info" className="bg-blue-50 text-blue-700 border-blue-200">
-                    Em Treinamento
-                  </Badge>
-                </div>
-              </div>
-            </div>
-
-            {/* Card Habilidades e Evolução */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
-              <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
-                Habilidades e Evolução
-              </h3>
-
-              {/* Técnicas */}
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  HABILIDADES TÉCNICAS
-                </p>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700">
-                    <span>CLP e Automação</span>
-                    <span>85%</span>
-                  </div>
-                  <Progress value={85} className="h-2.5 bg-slate-100" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700">
-                    <span>Desenho Técnico (CAD)</span>
-                    <span>92%</span>
-                  </div>
-                  <Progress value={92} className="h-2.5 bg-slate-100" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700">
-                    <span>Manutenção Preventiva</span>
-                    <span>78%</span>
-                  </div>
-                  <Progress value={78} className="h-2.5 bg-slate-100" />
-                </div>
-              </div>
-
-              {/* Socioemocionais */}
-              <div className="space-y-3 pt-3 border-t border-slate-100">
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  HABILIDADES SOCIOEMOCIONAIS
-                </p>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700">
-                    <span>Trabalho em Equipe</span>
-                    <span>95%</span>
-                  </div>
-                  <Progress value={95} className="h-2.5 bg-slate-100" />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-700">
-                    <span>Resolução de Problemas</span>
-                    <span>88%</span>
-                  </div>
-                  <Progress value={88} className="h-2.5 bg-slate-100" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna Direita: Histórico e Ajustes Timeline */}
-          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-6">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              Histórico e Ajustes
-            </h3>
-
-            <div className="space-y-6 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-slate-200">
-              {/* Evento 1 */}
-              <div className="relative flex items-start gap-4">
-                <div className="size-8 rounded-full bg-primary-800 text-white flex items-center justify-center shrink-0 z-10">
-                  <Calendar className="size-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">Entrevista Agendada</h4>
-                    <span className="text-xs text-slate-400">24 Out, 2023 - 14:30</span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Entrevista técnica inicial com supervisor de manutenção da unidade fabril 3.
-                  </p>
-                </div>
-              </div>
-
-              {/* Evento 2 */}
-              <div className="relative flex items-start gap-4">
-                <div className="size-8 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 z-10">
-                  <Wrench className="size-4" />
-                </div>
-                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900">Atualização de Perfil</h4>
-                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-rose-700 text-white rounded">
-                        AJUSTADO MANUALMENTE
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-400">15 Out, 2023</span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Nota de avaliação técnica atualizada de 80 para 85 após revisão final do projeto integrador.
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">Por: Carlos Eduardo (Gestor)</p>
-                </div>
-              </div>
-
-              {/* Evento 3 */}
-              <div className="relative flex items-start gap-4">
-                <div className="size-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 z-10">
-                  <CheckCircle className="size-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">Conclusão Módulo Básico</h4>
-                    <span className="text-xs text-slate-400">10 Set, 2023</span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Aluno aprovado em todos os requisitos do módulo introdutório de mecatrônica industrial.
-                  </p>
-                </div>
-              </div>
-
-              {/* Evento 4 */}
-              <div className="relative flex items-start gap-4">
-                <div className="size-8 rounded-full bg-rose-600 text-white flex items-center justify-center shrink-0 z-10">
-                  <Wrench className="size-4" />
-                </div>
-                <div className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-bold text-slate-900">Correção de Presença</h4>
-                      <span className="px-2 py-0.5 text-[10px] font-bold uppercase bg-rose-700 text-white rounded">
-                        AJUSTADO MANUALMENTE
-                      </span>
-                    </div>
-                    <span className="text-xs text-slate-400">02 Set, 2023</span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Justificativa médica aceita. Falta do dia 01/09 convertida para presença justificada.
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-1">Por: Secretaria Acadêmica</p>
-                </div>
-              </div>
-
-              {/* Evento 5 */}
-              <div className="relative flex items-start gap-4">
-                <div className="size-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 z-10">
-                  <UserPlus className="size-4" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-slate-900">Início do Curso</h4>
-                    <span className="text-xs text-slate-400">15 Fev, 2023</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        <PageHeader title={`Detalhes do Aluno: ${student.name}`} description={`Matrícula: ${student.registration}`} actions={<Link href="/manager/students" className={cn(buttonVariants({ variant: "outline" }), "gap-2")}><ArrowLeft className="size-4" /> Voltar</Link>} />
+        {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        {notice && <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</div>}
+        <div className="grid gap-6 lg:grid-cols-3">
+          <section className="space-y-4 rounded-xl border bg-white p-6 text-center"><Avatar className="mx-auto size-24"><AvatarFallback className="bg-primary-800 text-xl text-white">{initials}</AvatarFallback></Avatar><div><h2 className="text-xl font-bold">{student.name}</h2><p className="flex items-center justify-center gap-1 text-sm text-muted-foreground"><Mail className="size-4" /> {student.email}</p></div><Badge variant={student.statusStudent === "ENROLLED" ? "success" : "neutral"}>{student.statusStudent}</Badge><div className="space-y-2 border-t pt-4 text-left text-sm"><p><strong>Curso:</strong> {student.course}</p><p><strong>Turma:</strong> {student.className}</p><p><strong>Turno:</strong> {student.shift}</p></div><div className="space-y-3 border-t pt-4 text-left"><div><div className="mb-1 flex justify-between text-xs"><span>Frequência</span><strong>{student.attendanceRate}%</strong></div><Progress value={student.attendanceRate} /></div><div><div className="mb-1 flex justify-between text-xs"><span>Desempenho</span><strong>{student.performanceGrade ?? 0}/10</strong></div><Progress value={(student.performanceGrade ?? 0) * 10} /></div></div></section>
+          <section className="space-y-4 rounded-xl border bg-white p-6 lg:col-span-2"><h2 className="text-lg font-bold">Habilidades avaliadas</h2>{skills.map((skill) => <div key={skill.id}><div className="mb-1 flex justify-between text-sm"><span>{skill.name} <small className="text-muted-foreground">({skill.skillType})</small></span><strong>{skill.grade ?? 0}/10</strong></div><Progress value={(skill.grade ?? 0) * 10} /></div>)}{skills.length === 0 && <p className="text-sm text-muted-foreground">Nenhuma habilidade avaliada.</p>}<h2 className="border-t pt-5 text-lg font-bold">Encaminhamentos</h2>{applications.map((application) => <article key={application.id} className="flex items-center justify-between rounded-lg border p-3"><div><p className="font-semibold">{application.vacancyName}</p><p className="text-xs text-muted-foreground">{application.coordinatorName} · {new Date(application.createdAt).toLocaleDateString("pt-BR")}</p></div><div className="flex items-center gap-2"><Badge variant={application.status === "HIRED" ? "success" : application.status === "REJECTED" ? "neutral" : "info"}>{application.status}</Badge>{application.status === "REFERRED" && <Button size="sm" onClick={() => { setSelected(application); setModalOpen(true); }}><CalendarClock className="size-4" /> Agendar</Button>}</div></article>)}</section>
         </div>
       </div>
+      {selected && <InterviewSchedulingModal isOpen={modalOpen} onClose={() => setModalOpen(false)} candidateId={student.id} candidateName={student.name} applicationId={selected.id} vacancyId={selected.vacancyId} vacancyTitle={selected.vacancyName} onConfirm={interviewCreated} />}
     </AppShell>
   );
 }

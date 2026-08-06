@@ -127,6 +127,7 @@ export interface VacancyResponse {
   shift: string;
   park: string;
   section: string;
+  placeId: string;
   placeName: string;
   status: VacancyStatus;
   managerId?: string;
@@ -267,6 +268,10 @@ export function updateStudent(
 
 export function getVacancies(query: PageQuery = {}) {
   return all<VacancyResponse>("/vacancy/find/all", query);
+}
+
+export function getVacancy(id: string) {
+  return apiFetch<VacancyResponse>(`/vacancy/find/id/${encodeURIComponent(id)}`);
 }
 
 export function createVacancy(input: VacancyPayload) {
