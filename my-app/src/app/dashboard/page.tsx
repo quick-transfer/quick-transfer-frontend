@@ -1,22 +1,39 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { StatCard } from "@/components/shared/stat-card";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { buttonVariants } from "@/components/ui/button";
-import { mockStudents, mockTransferRequests, mockVacancies } from "@/lib/mock-data";
-import type { VacancyDTO } from "@/types";
-import { Users, FileText, ArrowUpRight, Briefcase, Plus, Eye } from "lucide-react";
+import type { ClassDTO, StudentDTO, VacancyDTO } from "@/types";
+import { getAdminVacancies, getAppStudents, getClasses } from '@/lib/application-api';
+import { Users, GraduationCap, ArrowUpRight, Briefcase, Plus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  // PENDING is the only actionable state for coordinators — APPROVED/REJECTED are terminal.
-  const totalStudents = mockStudents.length;
-  const pendingRequests = mockTransferRequests.filter((r) => r.status === "PENDING").length;
-  const totalVacancies = mockVacancies.length;
+  const [vacancies, setVacancies] = useState<VacancyDTO[]>([]);
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [classes, setClasses] = useState<ClassDTO[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    Promise.all([getAdminVacancies(), getAppStudents(), getClasses()])
+      .then(([vacancyData, studentData, classData]) => {
+        setVacancies(vacancyData);
+        setStudents(studentData);
+        setClasses(classData);
+      })
+      .catch((loadError) => {
+        setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar o painel.');
+      });
+  }, []);
+
+  const totalStudents = students.length;
+  const activeClasses = classes.filter((item) => item.status === "IN_PROGRESS").length;
+  const totalVacancies = vacancies.length;
 
   const vacancyColumns: DataTableColumn<VacancyDTO>[] = [
     {
@@ -63,12 +80,12 @@ export default function DashboardPage() {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: (vacancy) => (
+      render: () => (
         <Link
-          href={`/coordinator/direct`}
+          href="/coordinator/direct"
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), 'gap-1')}
         >
-          Direcionar
+          Detalhes
         </Link>
       ),
     },
@@ -79,16 +96,22 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <PageHeader
           title="Painel do Coordenador"
-          description="Visão geral da ocupação de turnos, turmas ativas e solicitações pendentes"
+          description="Visão geral de turmas, alunos e vagas"
           actions={
             <Link
-              href="/classes"
+              href="/classes/new"
               className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
             >
-              <Eye className="size-4" /> Ver Turmas
+              <Plus className="size-4" /> Nova Turma
             </Link>
           }
         />
+
+        {error && (
+          <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Vacancies table — spans 2 of 3 columns so the stat sidebar doesn't compete for attention. */}
@@ -109,7 +132,7 @@ export default function DashboardPage() {
             {/* pageSize=5 is intentional: keeps the card within viewport height on 1080p without scrolling. */}
             <DataTable
               columns={vacancyColumns}
-              data={mockVacancies}
+              data={vacancies}
               pageSize={5}
               getRowKey={(row) => row.id}
             />
@@ -128,11 +151,9 @@ export default function DashboardPage() {
               icon={Users}
             />
             <StatCard
-              label="Solicitações Pendentes"
-              value={pendingRequests}
-              icon={FileText}
-              // positive: false keeps the trend indicator red — pending requests always signal work outstanding.
-              trend={{ value: "Requer atenção", positive: false }}
+              label="Turmas Ativas"
+              value={activeClasses}
+              icon={GraduationCap}
             />
           </div>
         </div>
