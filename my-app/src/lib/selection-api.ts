@@ -71,7 +71,6 @@ export interface AuthenticatedUser {
   name: string;
   username: string;
   role: Exclude<UserRole, "STUDENT">;
-  firstLogin: boolean;
 }
 
 export async function getApplications(query: PageQuery = {}) {
