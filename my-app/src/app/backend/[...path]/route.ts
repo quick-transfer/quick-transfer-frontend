@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 const API_TARGET =
   process.env.API_PROXY_TARGET ||
-  "https://quick-transfer-backend.onrender.com/api";
+  "http://localhost:8080/api";
 
 const REQUEST_HEADERS_TO_REMOVE = [
   "connection",
@@ -77,6 +77,25 @@ async function proxy(
   responseHeaders.delete("content-encoding");
   responseHeaders.delete("content-length");
   responseHeaders.delete("transfer-encoding");
+
+  // The backend is mounted at /api and scopes XSRF-TOKEN to that path. From
+  // the browser's perspective requests use /backend, so the original cookie
+  // would never be sent back to this proxy. Re-scope only the cookie path;
+  // security attributes (HttpOnly, SameSite, Secure, Max-Age) are preserved.
+  const upstreamHeaders = upstream.headers as Headers & {
+    getSetCookie?: () => string[];
+  };
+  const setCookies = upstreamHeaders.getSetCookie?.()
+    ?? (upstream.headers.get("set-cookie") ? [upstream.headers.get("set-cookie") as string] : []);
+  if (setCookies.length > 0) {
+    responseHeaders.delete("set-cookie");
+    for (const cookie of setCookies) {
+      responseHeaders.append(
+        "set-cookie",
+        cookie.replace(/Path=\/api(?=;|$)/gi, "Path=/"),
+      );
+    }
+  }
 
   return new Response(upstream.body, {
     status: upstream.status,

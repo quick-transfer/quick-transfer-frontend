@@ -6,16 +6,13 @@ import type {
   VacancyDTO,
   InterviewDTO,
   StudentDTO,
-  ShiftDTO,
   NotificationTimelineDTO,
-  TransferRequestDTO,
 } from "@/types";
 
 // ── Static mock data used while the backend is unavailable ──
 //
-// These records intentionally reflect real-world scenarios (e.g. a FULL shift,
-// a PENDING transfer request) so that every UI state path can be exercised
-// without needing a seeded database.
+// These records intentionally reflect real-world scenarios so that the main
+// UI states can be exercised without needing a seeded database.
 
 export const mockUsers: UserDTO[] = [
   {
@@ -30,13 +27,6 @@ export const mockUsers: UserDTO[] = [
     name: "Carlos Eduardo",
     email: "carlos.eduardo@weg.net",
     role: "COORDINATOR",
-    active: true,
-  },
-  {
-    id: "usr-4",
-    name: "Lucas Oliveira",
-    email: "lucas.oliveira@weg.net",
-    role: "STUDENT",
     active: true,
   },
   {
@@ -215,21 +205,18 @@ export const mockStudents: StudentDTO[] = [
     email: "lucas.santos@estudante.weg.net",
     courseName: "Técnico em Eletromecânica",
     className: "Turma A - Eletromecânica",
-    shift: "Turno A (06:00 - 14:00)",
     status: "ACTIVE",
     attendanceRate: 96.5,
     performanceGrade: 9.2,
   },
   {
-    // TRANSFERRING student — exercises the pending-transfer UI state on the dashboard.
     id: "std-2",
     name: "Juliana Mendes",
     registration: "2024002",
     email: "juliana.mendes@estudante.weg.net",
     courseName: "Automação Industrial",
     className: "Turma A - Automação",
-    shift: "Turno B (14:00 - 22:00)",
-    status: "TRANSFERRING",
+    status: "ACTIVE",
     attendanceRate: 92.0,
     performanceGrade: 8.7,
   },
@@ -240,58 +227,13 @@ export const mockStudents: StudentDTO[] = [
     email: "rafael.oliveira@estudante.weg.net",
     courseName: "Técnico em Eletromecânica",
     className: "Turma B - Eletromecânica",
-    shift: "Turno A (06:00 - 14:00)",
     status: "ACTIVE",
     attendanceRate: 88.0,
     performanceGrade: 7.9,
   },
 ];
 
-export const mockShifts: ShiftDTO[] = [
-  {
-    id: "shf-1",
-    name: "Turno A - Matutino",
-    code: "TRN-A",
-    supervisorName: "Mariana Costa",
-    capacity: 50,
-    currentOccupancy: 45,
-    // Pre-computed to avoid per-render floating-point division in the UI.
-    occupancyPercentage: 90,
-    status: "HIGH_DEMAND",
-  },
-  {
-    id: "shf-2",
-    name: "Turno B - Vespertino",
-    code: "TRN-B",
-    supervisorName: "Carlos Eduardo",
-    capacity: 50,
-    currentOccupancy: 32,
-    occupancyPercentage: 64,
-    status: "NORMAL",
-  },
-  {
-    // FULL shift — exercises the "Lotado" badge and the 100% progress bar.
-    id: "shf-3",
-    name: "Turno C - Noturno",
-    code: "TRN-C",
-    supervisorName: "Ana Silva",
-    capacity: 30,
-    currentOccupancy: 30,
-    occupancyPercentage: 100,
-    status: "FULL",
-  },
-];
-
 export const mockTimeline: NotificationTimelineDTO[] = [
-  {
-    id: "tml-1",
-    studentId: "std-1",
-    title: "Solicitação de Troca Aprovada",
-    description: "Transferência do Turno B para o Turno A autorizada pelo coordenador.",
-    date: "22/07/2026 às 14:30",
-    type: "TRANSFER",
-    status: "success",
-  },
   {
     id: "tml-2",
     studentId: "std-1",
@@ -310,27 +252,5 @@ export const mockTimeline: NotificationTimelineDTO[] = [
     date: "10/07/2026 às 16:15",
     type: "WARNING",
     status: "warning",
-  },
-];
-
-export const mockTransferRequests: TransferRequestDTO[] = [
-  {
-    // Both requests are PENDING to exercise the "Requer atenção" stat card trend.
-    id: "req-1",
-    studentName: "Juliana Mendes",
-    currentShift: "Turno B (14:00 - 22:00)",
-    targetShift: "Turno A (06:00 - 14:00)",
-    reason: "Compatibilidade de horário com módulo universitário no período noturno",
-    requestedAt: "22/07/2026",
-    status: "PENDING",
-  },
-  {
-    id: "req-2",
-    studentName: "Rafael Oliveira",
-    currentShift: "Turno A (06:00 - 14:00)",
-    targetShift: "Turno C (22:00 - 06:00)",
-    reason: "Motivos pessoais de deslocamento residencial",
-    requestedAt: "21/07/2026",
-    status: "PENDING",
   },
 ];

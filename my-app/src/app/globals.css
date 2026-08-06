@@ -10,8 +10,8 @@
 
 @theme inline {
   /* Typography */
-  --font-heading: var(--font-manrope);
-  --font-sans: var(--font-manrope);
+  --font-heading: "Segoe UI", Arial, sans-serif;
+  --font-sans: "Segoe UI", Arial, sans-serif;
 
   /* Radius scale */
   --radius-sm: calc(var(--radius) * 0.5);
