@@ -72,14 +72,18 @@ const navigation: SidebarNavSection[] = [
         icon: "LayoutDashboard",
         roles: ["COORDINATOR", "ADMIN"],
       },
-      // Shifts route temporarily commented out — the shift management feature
-      // is under review for the coordinator role.
-      // {
-      //   label: "Turnos",
-      //   href: "/shifts",
-      //   icon: "Clock",
-      //   roles: ["COORDINATOR", "ADMIN"],
-      // },
+      {
+        label: "Turnos",
+        href: "/shifts",
+        icon: "Clock",
+        roles: ["COORDINATOR", "ADMIN"],
+      },
+      {
+        label: "Solicitações",
+        href: "/requests",
+        icon: "FileText",
+        roles: ["COORDINATOR", "ADMIN"],
+      },
       {
         label: "Turmas",
         href: "/classes",
@@ -183,6 +187,12 @@ const navigation: SidebarNavSection[] = [
         icon: "Briefcase",
         roles: ["ADMIN"],
       },
+      {
+        label: "Configurações",
+        href: "/admin/settings",
+        icon: "Settings",
+        roles: ["ADMIN"],
+      },
     ],
   },
 ];
@@ -193,6 +203,7 @@ const navigation: SidebarNavSection[] = [
 function normalizeRole(roleStr?: UserRole | string | null): UserRole {
   if (!roleStr) return "COORDINATOR";
   const upper = roleStr.toUpperCase();
+  if (upper === "ADMIN") return "ADMIN";
   if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
   if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
   return "COORDINATOR";

@@ -102,7 +102,7 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
   }
 
   // Exact-match or prefix-with-slash prevents `/dashboard-extra` matching `/dashboard`.
-  const coordinatorRoutes = ["/dashboard", "/shifts", "/classes", "/students", "/courses", "/coordinator"];
+  const coordinatorRoutes = ["/dashboard", "/shifts", "/requests", "/classes", "/students", "/courses", "/coordinator"];
   if (coordinatorRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
     return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR";
   }
