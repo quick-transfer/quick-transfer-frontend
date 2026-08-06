@@ -36,6 +36,10 @@ function buildTargetUrl(request: NextRequest, path: string[]) {
   return targetUrl;
 }
 
+function rewriteCookiePath(cookie: string) {
+  return cookie.replace(/;\s*Path=\/api(?=;|$)/i, "; Path=/backend");
+}
+
 async function proxy(
   request: NextRequest,
   context: { params: Promise<{ path: string[] }> },
@@ -77,6 +81,14 @@ async function proxy(
   responseHeaders.delete("content-encoding");
   responseHeaders.delete("content-length");
   responseHeaders.delete("transfer-encoding");
+
+  const setCookies = upstream.headers.getSetCookie();
+  if (setCookies.length > 0) {
+    responseHeaders.delete("set-cookie");
+    for (const cookie of setCookies) {
+      responseHeaders.append("set-cookie", rewriteCookiePath(cookie));
+    }
+  }
 
   return new Response(upstream.body, {
     status: upstream.status,
