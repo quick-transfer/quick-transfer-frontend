@@ -1,28 +1,32 @@
 "use client";
 
+import { useEffect, useState } from 'react';
+
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { buttonVariants } from "@/components/ui/button";
-import { mockStudents } from "@/lib/mock-data";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { StudentDTO } from "@/types";
 import Link from "next/link";
-import { Eye } from "lucide-react";
+import { Eye, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAppStudents } from '@/lib/application-api';
 
 export default function AlunosPage() {
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getAppStudents().then(setStudents).catch((loadError) => {
+      setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os alunos.');
+    });
+  }, []);
   const columns: DataTableColumn<StudentDTO>[] = [
     {
       key: "name",
       header: "Aluno",
       sortable: true,
       render: (student) => {
-        const initials = student.name
-          .split(" ")
-          .map((n) => n[0])
-          .slice(0, 2)
-          .join("");
         return (
           <div className="flex items-center gap-3">
             <div>
@@ -44,18 +48,13 @@ export default function AlunosPage() {
       ),
     },
     {
-      key: "shift",
-      header: "Turno Atual",
-      render: (student) => (
-        <span className="text-sm font-medium text-foreground">{student.shift}</span>
-      ),
-    },
-    {
       key: "attendanceRate",
       header: "Frequência",
       sortable: true,
       render: (student) => (
-        <span className="text-sm font-semibold text-foreground">{student.attendanceRate}%</span>
+        <span className="text-sm font-semibold text-foreground">
+          {student.attendanceRate == null ? "Não informado" : `${student.attendanceRate}%`}
+        </span>
       ),
     },
     {
@@ -63,7 +62,6 @@ export default function AlunosPage() {
       header: "Status",
       render: (student) => {
         if (student.status === "ACTIVE") return <Badge variant="success">Ativo</Badge>;
-        if (student.status === "TRANSFERRING") return <Badge variant="warning">Em Transferência</Badge>;
         if (student.status === "COMPLETED") return <Badge variant="info">Concluído</Badge>;
         return <Badge variant="neutral">Pausado</Badge>;
       },
@@ -89,11 +87,17 @@ export default function AlunosPage() {
         <PageHeader
           title="Diretório de Alunos Aprendizes"
           description="Consulte e gerencie os alunos cadastrados nos programas técnicos da unidade"
+          actions={
+            <Link href="/students/new">
+              <Button className="gap-2"><Plus className="size-4" /> Novo aluno</Button>
+            </Link>
+          }
         />
 
+        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         <DataTable
           columns={columns}
-          data={mockStudents}
+          data={students}
           searchable
           searchPlaceholder="Buscar aluno por nome ou matrícula..."
           searchKeys={["name", "registration", "courseName"]}
