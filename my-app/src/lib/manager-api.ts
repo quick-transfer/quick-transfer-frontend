@@ -35,6 +35,17 @@ export interface Vacancy {
   shift: VacancyShift | string;
   park: string;
   section: string;
+  placeName: string;
+  status: "OPEN" | "CLOSED" | "URGENT";
+  managerId?: string;
+  managerName?: string;
+  filledSpots: number;
+  skills: Array<{
+    id: string;
+    name: string;
+    skillType: string;
+    minimumGrade: number;
+  }>;
 }
 
 export interface VacancyInput {
@@ -45,6 +56,8 @@ export interface VacancyInput {
   shift: VacancyShift;
   // placeId rather than location string — the backend resolves park/section from the Place entity.
   placeId: string;
+  skillIds?: string[];
+  status?: "OPEN" | "CLOSED" | "URGENT";
 }
 
 // Update omits numbersVacancies intentionally: spot count changes go through
@@ -55,6 +68,9 @@ export interface VacancyUpdateInput {
   area: VacancyArea;
   shift: VacancyShift;
   placeId: string;
+  numbersVacancies?: number;
+  skillIds?: string[];
+  status?: "OPEN" | "CLOSED" | "URGENT";
 }
 
 export interface Student {
@@ -68,6 +84,11 @@ export interface Student {
   statusStudentInterview: InterviewStatus | string;
   hasSeenEmail: boolean;
   statusStudent: "ENROLLED" | "FIRED" | "LEFT" | string;
+  registration: string;
+  attendanceRate: number;
+  className: string;
+  shift: "MORNING" | "AFTERNOON" | "NIGHT" | string;
+  performanceGrade?: number;
 }
 
 export interface Skill {
@@ -85,6 +106,11 @@ export interface Place {
   placeName: string;
   park: string;
   section: string;
+  code: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  status: "ACTIVE" | "INACTIVE";
 }
 
 export interface PlaceInput {
@@ -92,6 +118,11 @@ export interface PlaceInput {
   // Only two parks currently supported by the backend.
   park: "WEG_I" | "WEG_II";
   section: string;
+  code?: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  status?: "ACTIVE" | "INACTIVE";
 }
 
 export interface Manager {
@@ -100,6 +131,9 @@ export interface Manager {
   username: string;
   email: string;
   section: string;
+  role: "MANAGER";
+  active: boolean;
+  firstLogin: boolean;
 }
 
 export type ManagerSection = "IT";
@@ -117,6 +151,9 @@ export interface Coordinator {
   name: string;
   username: string;
   email: string;
+  role: "COORDINATOR";
+  active: boolean;
+  firstLogin: boolean;
 }
 
 export interface CoordinatorInput {
