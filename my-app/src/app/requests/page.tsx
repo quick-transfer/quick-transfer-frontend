@@ -1,109 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Check, X } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { mockTransferRequests } from "@/lib/mock-data";
-import type { TransferRequestDTO } from "@/types";
-import { Check, X } from "lucide-react";
+import { getTransferRequests, resolveTransferRequest, type TransferRequestResponse } from "@/lib/operations-api";
 
 export default function SolicitacoesPage() {
-  const [requests, setRequests] = useState<TransferRequestDTO[]>(mockTransferRequests);
+  const [requests, setRequests] = useState<TransferRequestResponse[]>([]);
+  const [workingId, setWorkingId] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const handleAction = (id: string, status: "APPROVED" | "REJECTED") => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status } : r))
-    );
+  useEffect(() => {
+    let mounted = true;
+    getTransferRequests({ size: 500, sort: "requestedAt,desc" })
+      .then((response) => mounted && setRequests(response))
+      .catch((requestError) => mounted && setError(
+        requestError instanceof Error ? requestError.message : "Não foi possível carregar as solicitações.",
+      ));
+    return () => { mounted = false; };
+  }, []);
+
+  const handleAction = async (request: TransferRequestResponse, status: "APPROVED" | "REJECTED") => {
+    setWorkingId(request.id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await resolveTransferRequest(request.id, { status });
+      setRequests((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setNotice(status === "APPROVED" ? "Transferência aprovada e turno atualizado." : "Solicitação rejeitada.");
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Não foi possível concluir a solicitação.");
+    } finally {
+      setWorkingId(null);
+    }
   };
 
-  const columns: DataTableColumn<TransferRequestDTO>[] = [
-    {
-      key: "studentName",
-      header: "Aluno Solicitante",
-      sortable: true,
-      render: (req) => (
-        <div>
-          <p className="font-medium text-foreground">{req.studentName}</p>
-          <p className="text-xs text-muted-foreground">Solicitado em: {req.requestedAt}</p>
-        </div>
-      ),
-    },
-    {
-      key: "shifts",
-      header: "Mudança Solicitada",
-      render: (req) => (
-        <div className="text-xs">
-          <p className="text-muted-foreground">De: <span className="font-medium text-foreground">{req.currentShift}</span></p>
-          <p className="text-primary font-medium">Para: <span>{req.targetShift}</span></p>
-        </div>
-      ),
-    },
-    {
-      key: "reason",
-      header: "Motivo / Justificativa",
-      render: (req) => (
-        <p className="text-xs text-muted-foreground max-w-xs">{req.reason}</p>
-      ),
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (req) => {
-        if (req.status === "APPROVED") return <Badge variant="success">Aprovada</Badge>;
-        if (req.status === "REJECTED") return <Badge variant="danger">Rejeitada</Badge>;
-        return <Badge variant="warning">Pendente</Badge>;
-      },
-    },
-    {
-      key: "actions",
-      header: "Ações",
-      className: "text-right",
-      render: (req) => (
-        req.status === "PENDING" ? (
-          <div className="flex justify-end gap-1.5">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAction(req.id, "APPROVED")}
-              className="text-status-success-foreground border-status-success-foreground/30 hover:bg-status-success gap-1"
-            >
-              <Check className="size-3.5" /> Aprovar
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleAction(req.id, "REJECTED")}
-              className="text-status-danger-foreground border-status-danger-foreground/30 hover:bg-status-danger gap-1"
-            >
-              <X className="size-3.5" /> Rejeitar
-            </Button>
-          </div>
-        ) : (
-          <span className="text-xs text-muted-foreground italic">Finalizada</span>
-        )
-      ),
-    },
+  const columns: DataTableColumn<TransferRequestResponse>[] = [
+    { key: "studentName", header: "Aluno solicitante", sortable: true, render: (request) => <div><p className="font-medium">{request.studentName}</p><p className="text-xs text-muted-foreground">{request.registration} · {new Date(request.requestedAt).toLocaleDateString("pt-BR")}</p></div> },
+    { key: "shifts", header: "Mudança solicitada", render: (request) => <div className="text-xs"><p>De: <strong>{request.currentShift}</strong></p><p className="text-primary">Para: <strong>{request.targetShift}</strong></p></div> },
+    { key: "reason", header: "Motivo / justificativa", render: (request) => <p className="max-w-xs text-xs text-muted-foreground">{request.reason}</p> },
+    { key: "requestedByName", header: "Solicitado por", render: (request) => <span className="text-sm">{request.requestedByName}</span> },
+    { key: "status", header: "Status", render: (request) => request.status === "APPROVED" ? <Badge variant="success">Aprovada</Badge> : request.status === "REJECTED" ? <Badge variant="danger">Rejeitada</Badge> : <Badge variant="warning">Pendente</Badge> },
+    { key: "actions", header: "Ações", className: "text-right", render: (request) => request.status === "PENDING" ? <div className="flex justify-end gap-1.5"><Button variant="outline" size="sm" disabled={workingId === request.id} onClick={() => void handleAction(request, "APPROVED")}><Check className="size-3.5" />Aprovar</Button><Button variant="outline" size="sm" className="text-destructive" disabled={workingId === request.id} onClick={() => void handleAction(request, "REJECTED")}><X className="size-3.5" />Rejeitar</Button></div> : <span className="text-xs italic text-muted-foreground">Finalizada</span> },
   ];
 
   return (
-    <AppShell breadcrumbs={[{ label: "Solicitações Pendentes" }]}>
+    <AppShell breadcrumbs={[{ label: "Solicitações" }]}>
       <div className="space-y-6">
-        <PageHeader
-          title="Solicitações de Transferência"
-          description="Analise e gerencie pedidos de troca de turno enviados por alunos e supervisores"
-        />
-
-        <DataTable
-          columns={columns}
-          data={requests}
-          pageSize={10}
-          searchable
-          searchPlaceholder="Buscar por aluno..."
-          searchKeys={["studentName", "reason"]}
-          getRowKey={(row) => row.id}
-        />
+        <PageHeader title="Solicitações de Transferência" description="Analise pedidos de troca de turno com controle de capacidade" />
+        {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        {notice && <div role="status" className="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700">{notice}</div>}
+        <DataTable columns={columns} data={requests} pageSize={10} searchable searchPlaceholder="Buscar por aluno ou motivo..." searchKeys={["studentName", "registration", "reason"]} getRowKey={(row) => row.id} />
       </div>
     </AppShell>
   );
