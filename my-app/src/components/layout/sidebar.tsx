@@ -4,11 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Clock,
   Users,
   GraduationCap,
-  FileText,
-  Settings,
   MapPin,
   CalendarCheck,
   BookOpen,
@@ -32,15 +29,14 @@ import { useRouter } from 'next/navigation';
 import { apiFetch, AUTH_COOKIE_NAME } from "@/lib/api";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 
+import { USER_ID_COOKIE_NAME, USER_NAME_COOKIE_NAME } from '@/lib/auth';
+
 // String-keyed map so nav items reference icons by name from JSON/config
 // rather than importing every icon in every consumer.
 const iconMap: Record<string, LucideIcon> = {
   LayoutDashboard,
-  Clock,
   Users,
   GraduationCap,
-  FileText,
-  Settings,
   MapPin,
   CalendarCheck,
   BookOpen,
@@ -70,39 +66,31 @@ const navigation: SidebarNavSection[] = [
         label: "Painel",
         href: "/dashboard",
         icon: "LayoutDashboard",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
-      // Shifts route temporarily commented out — the shift management feature
-      // is under review for the coordinator role.
-      // {
-      //   label: "Turnos",
-      //   href: "/shifts",
-      //   icon: "Clock",
-      //   roles: ["COORDINATOR", "ADMIN"],
-      // },
       {
         label: "Turmas",
         href: "/classes",
         icon: "GraduationCap",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Alunos",
         href: "/students",
         icon: "Users",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Cursos",
         href: "/courses",
         icon: "BookOpen",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
       {
         label: "Direcionar Alunos",
         href: "/coordinator/direct",
         icon: "Users2",
-        roles: ["COORDINATOR", "ADMIN"],
+        roles: ["COORDINATOR"],
       },
     ],
   },
@@ -126,6 +114,12 @@ const navigation: SidebarNavSection[] = [
         href: "/manager/interviews",
         icon: "CalendarClock",
         roles: ["MANAGER", "ADMIN"],
+      },
+      {
+        label: "Locais",
+        href: "/manager/locations",
+        icon: "MapPin",
+        roles: ["MANAGER"],
       },
     ],
   },
@@ -151,12 +145,6 @@ const navigation: SidebarNavSection[] = [
       //   icon: "Briefcase",
       //   roles: ["ADMIN"],
       // },
-      {
-        label: "Locais",
-        href: "/admin/locations",
-        icon: "MapPin",
-        roles: ["ADMIN"],
-      },
       // Admin interviews view hidden — managers own the interview workflow.
       // {
       //   label: "Entrevistas",
@@ -164,12 +152,6 @@ const navigation: SidebarNavSection[] = [
       //   icon: "CalendarCheck",
       //   roles: ["ADMIN"],
       // },
-      {
-        label: "Cursos",
-        href: "/admin/courses",
-        icon: "BookOpen",
-        roles: ["ADMIN"],
-      },
       // Admin class management hidden — coordinators own class creation.
       // {
       //   label: "Turmas",
@@ -177,12 +159,6 @@ const navigation: SidebarNavSection[] = [
       //   icon: "GraduationCap",
       //   roles: ["ADMIN"],
       // },
-      {
-        label: "Vagas",
-        href: "/admin/vacancies",
-        icon: "Briefcase",
-        roles: ["ADMIN"],
-      },
     ],
   },
 ];
@@ -218,6 +194,8 @@ export function Sidebar({ currentRole = "ADMIN" }: SidebarProps) {
       // This also covers the mock session, which never hits the backend.
       document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      document.cookie = `${USER_ID_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      document.cookie = `${USER_NAME_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 
       // The backend POST invalidates the HttpOnly JWT cookie server-side.
       // Network errors are intentionally swallowed — even if the backend is

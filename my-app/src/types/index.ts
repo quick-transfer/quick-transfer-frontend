@@ -1,9 +1,9 @@
 // Types reflecting the Quick Transfer backend API schemas
 // Repository: https://github.com/quick-transfer/quick-transfer-backend (branch: develop)
 
-// STUDENT is defined here for completeness but the frontend currently has no
-// student-facing routes — the role exists only for future expansion.
-export type UserRole = "ADMIN" | "COORDINATOR" | "MANAGER" | "STUDENT";
+// Perfis que autenticam e operam o sistema. Aluno é uma entidade de domínio
+// representada por StudentDTO, não um usuário com acesso à aplicação.
+export type UserRole = "ADMIN" | "COORDINATOR" | "MANAGER";
 
 export type StatusType = "success" | "danger" | "warning" | "info" | "neutral";
 
@@ -93,23 +93,10 @@ export interface StudentDTO {
   email: string;
   courseName: string;
   className: string;
-  shift: string;
-  status: "ACTIVE" | "TRANSFERRING" | "COMPLETED" | "PAUSED";
-  attendanceRate: number;
-  performanceGrade: number;
+  status: "ACTIVE" | "COMPLETED" | "PAUSED";
+  attendanceRate?: number;
+  performanceGrade?: number;
   avatarUrl?: string;
-}
-
-export interface ShiftDTO {
-  id: string;
-  name: string;
-  code: string;
-  supervisorName: string;
-  capacity: number;
-  currentOccupancy: number;
-  // Pre-computed by the backend to avoid floating-point division on every render.
-  occupancyPercentage: number;
-  status: "NORMAL" | "HIGH_DEMAND" | "FULL";
 }
 
 export interface NotificationTimelineDTO {
@@ -118,16 +105,6 @@ export interface NotificationTimelineDTO {
   title: string;
   description: string;
   date: string;
-  type: "TRANSFER" | "INTERVIEW" | "WARNING" | "INFO";
+  type: "INTERVIEW" | "WARNING" | "INFO";
   status: StatusType;
-}
-
-export interface TransferRequestDTO {
-  id: string;
-  studentName: string;
-  currentShift: string;
-  targetShift: string;
-  reason: string;
-  requestedAt: string;
-  status: "PENDING" | "APPROVED" | "REJECTED";
 }
