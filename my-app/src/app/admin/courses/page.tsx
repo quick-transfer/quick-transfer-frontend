@@ -15,6 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToastCard } from "@/components/ui/toast-card";
 import { mockCourses } from "@/lib/mock-data";
 import type { CourseDTO } from "@/types";
 import { Edit, Plus, Trash2 } from "lucide-react";
@@ -25,10 +26,10 @@ export default function CursosAdminPage() {
   const [filterTab, setFilterTab] = useState<string>("ALL");
   const [editingCourse, setEditingCourse] = useState<CourseDTO | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isNewOpen, setIsNewOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingCourse, setDeletingCourse] = useState<CourseDTO | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [toastVariant, setToastVariant] = useState<"success" | "destructive">("success");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -59,14 +60,6 @@ export default function CursosAdminPage() {
     setIsEditOpen(true);
   };
 
-  const openNew = () => {
-    setFormName("");
-    setFormCode("");
-    setFormCoordinator("");
-    setFormStatus("ACTIVE");
-    setIsNewOpen(true);
-  };
-
   const openDelete = (course: CourseDTO) => {
     setDeletingCourse(course);
     setIsDeleteOpen(true);
@@ -85,7 +78,9 @@ export default function CursosAdminPage() {
       const saved = await updateCourse(updated);
       setCourses((prev) => prev.map((course) => course.id === saved.id ? saved : course));
       setIsEditOpen(false);
+      setToastVariant("success");
       setSuccessMsg('Curso atualizado com sucesso!');
+      setTimeout(() => setSuccessMsg(""), 7000);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Não foi possível atualizar o curso.');
     } finally {
@@ -96,9 +91,9 @@ export default function CursosAdminPage() {
   const handleCreate = async () => {
     if (!formName.trim() || !formCode.trim()) return;
     const input: Omit<CourseDTO, 'id'> = {
-      name: formName,
-      code: formCode,
-      coordinatorName: formCoordinator,
+      name: formName.trim(),
+      code: formCode.trim(),
+      coordinatorName: formCoordinator.trim(),
       totalStudents: 0,
       status: formStatus,
     };
@@ -107,8 +102,13 @@ export default function CursosAdminPage() {
     try {
       const created = await createCourse(input);
       setCourses((prev) => [...prev, created]);
-      setIsNewOpen(false);
+      setFormName("");
+      setFormCode("");
+      setFormCoordinator("");
+      setFormStatus("ACTIVE");
+      setToastVariant("success");
       setSuccessMsg('Curso criado com sucesso!');
+      setTimeout(() => setSuccessMsg(""), 7000);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Não foi possível criar o curso.');
     } finally {
@@ -122,10 +122,11 @@ export default function CursosAdminPage() {
     setError('');
     try {
       await deleteCourse(deletingCourse.id);
-    setCourses((prev) => prev.filter((c) => c.id !== deletingCourse.id));
-    setIsDeleteOpen(false);
-    setSuccessMsg(`Curso "${deletingCourse.name}" excluído com sucesso.`);
-    setTimeout(() => setSuccessMsg(""), 4000);
+      setCourses((prev) => prev.filter((c) => c.id !== deletingCourse.id));
+      setIsDeleteOpen(false);
+      setToastVariant("destructive");
+      setSuccessMsg(`Curso "${deletingCourse.name}" excluído com sucesso.`);
+      setTimeout(() => setSuccessMsg(""), 7000);
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível excluir o curso.');
     } finally {
@@ -210,33 +211,105 @@ export default function CursosAdminPage() {
         <PageHeader
           title="Cursos Técnicos e Profissionalizantes"
           description="Catálogo de programas de qualificação técnica oferecidos na unidade"
-          actions={
-            <Button className="gap-2 bg-primary px-4 py-5 text-white hover:bg-primary-700" onClick={openNew}>
-              <Plus className="size-4" /> Novo Curso
-            </Button>
-          }
         />
 
         {error && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
         )}
-        <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-white p-1 shadow-primary-900 shadow-sm">
-            <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
-            <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
-            <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
-          </TabsList>
-        </Tabs>
 
-        <DataTable
-          columns={columns}
-          data={filteredCourses}
-          pageSize={10}
-          searchable
-          searchPlaceholder="Buscar curso por nome ou código..."
-          searchKeys={["name", "code", "coordinatorName"]}
-          getRowKey={(row) => row.id}
-        />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Lado Esquerdo - Lista de Cursos */}
+          <div className="lg:col-span-2 space-y-4">
+            <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
+              <TabsList>
+                <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
+                <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
+                <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
+              </TabsList>
+            </Tabs>
+
+            <DataTable
+              columns={columns}
+              data={filteredCourses}
+              pageSize={10}
+              searchable
+              searchPlaceholder="Buscar curso por nome ou código..."
+              searchKeys={["name", "code", "coordinatorName"]}
+              getRowKey={(row) => row.id}
+            />
+          </div>
+
+          {/* Lado Direito - Formulário de Novo Curso */}
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Novo Curso</h2>
+              <p className="text-xs text-slate-500">Preencha para cadastrar um novo curso.</p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleCreate();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nome do Curso <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  placeholder="Ex: Técnico em Mecatrônica"
+                  className="h-10 border-slate-200 text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Código <span className="text-red-500">*</span>
+                  </label>
+                  <Input
+                    value={formCode}
+                    onChange={(e) => setFormCode(e.target.value)}
+                    placeholder="MEC-2024"
+                    className="h-10 border-slate-200 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
+                  <select
+                    value={formStatus}
+                    onChange={(e) => setFormStatus(e.target.value as "ACTIVE" | "COMPLETED")}
+                    className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    <option value="ACTIVE">Em Andamento</option>
+                    <option value="COMPLETED">Concluído</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Coordenador</label>
+                <Input
+                  value={formCoordinator}
+                  onChange={(e) => setFormCoordinator(e.target.value)}
+                  placeholder="Nome do coordenador"
+                  className="h-10 border-slate-200 text-sm"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={saving || !formName.trim() || !formCode.trim()}
+                className="w-full bg-primary-900 text-white hover:bg-primary-950 gap-2 h-10"
+              >
+                <Plus className="size-4" /> {saving ? "Criando..." : "Criar Curso"}
+              </Button>
+            </form>
+          </div>
+        </div>
       </div>
 
       {/* Modal de Edição */}
@@ -280,47 +353,6 @@ export default function CursosAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal de Novo Curso */}
-      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">Novo Curso</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">Preencha para cadastrar um novo curso.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Nome do Curso <span className="text-red-500">*</span></label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Ex: Técnico em Mecatrônica" className="h-10 border-slate-200" />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Código <span className="text-red-500">*</span></label>
-                <Input value={formCode} onChange={(e) => setFormCode(e.target.value)} placeholder="MEC-2024" className="h-10 border-slate-200" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
-                <select
-                  value={formStatus}
-                  onChange={(e) => setFormStatus(e.target.value as "ACTIVE" | "COMPLETED")}
-                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                >
-                  <option value="ACTIVE">Em Andamento</option>
-                  <option value="COMPLETED">Concluído</option>
-                </select>
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Coordenador</label>
-              <Input value={formCoordinator} onChange={(e) => setFormCoordinator(e.target.value)} placeholder="Nome do coordenador" className="h-10 border-slate-200" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
-            <Button onClick={() => void handleCreate()} disabled={saving || !formName.trim() || !formCode.trim()} className="bg-primary-900 text-white hover:bg-primary-950">{saving ? 'Criando...' : 'Criar Curso'}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Modal de Exclusão */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent className="sm:max-w-sm bg-white border border-slate-200">
@@ -337,11 +369,8 @@ export default function CursosAdminPage() {
         </DialogContent>
       </Dialog>
 
-      {successMsg && (
-        <div className="fixed top-20 right-6 z-50 max-w-sm p-4 bg-emerald-800 text-white rounded-lg shadow-xl text-sm font-medium">
-          {successMsg}
-        </div>
-      )}
+      <ToastCard message={successMsg} variant={toastVariant} />
     </AppShell>
   );
 }
+

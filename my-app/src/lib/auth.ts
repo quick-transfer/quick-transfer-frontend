@@ -96,8 +96,9 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
 
   const normalizedRole = role.toUpperCase();
 
+  // ADMIN can access everything
   if (normalizedRole === "ADMIN") {
-    return pathname === "/admin" || pathname === "/admin/users";
+    return true;
   }
 
   if (pathname.startsWith("/admin")) {
@@ -108,7 +109,6 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
     return normalizedRole === "MANAGER" || normalizedRole === "GESTOR";
   }
 
-  // Exact-match or prefix-with-slash prevents `/dashboard-extra` matching `/dashboard`.
   const coordinatorRoutes = ["/dashboard", "/classes", "/students", "/courses", "/coordinator"];
   if (coordinatorRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
     return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR";
