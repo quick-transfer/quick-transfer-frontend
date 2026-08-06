@@ -43,7 +43,7 @@ export function Topbar({
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem>
-            <BreadcrumbLink href="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground">
+            <BreadcrumbLink href="/" className="text-sm font-medium text-muted-foreground hover:text-foreground">
               Quick Transfer
             </BreadcrumbLink>
           </BreadcrumbItem>

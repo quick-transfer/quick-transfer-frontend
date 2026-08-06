@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, UserCog, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Briefcase,
+  MapPin,
+  ShieldCheck,
+  UserCog,
+  Users,
+} from "lucide-react";
 
 import { AppShell, PageHeader } from "@/components/layout";
 import { StatCard } from "@/components/shared/stat-card";
@@ -11,6 +19,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAppUsers } from "@/lib/application-api";
 import { cn } from "@/lib/utils";
 import type { UserDTO } from "@/types";
+
+const adminAreas = [
+  {
+    title: "Cursos",
+    description: "Gerencie os cursos disponíveis para as turmas",
+    href: "/admin/courses",
+    icon: BookOpen,
+    iconClassName: "bg-violet-500/10 text-violet-600",
+  },
+  {
+    title: "Vagas",
+    description: "Acompanhe as vagas cadastradas no sistema",
+    href: "/admin/vacancies",
+    icon: Briefcase,
+    iconClassName: "bg-amber-500/10 text-amber-600",
+  },
+] as const;
 
 export default function AdminPage() {
   const [users, setUsers] = useState<UserDTO[]>([]);
@@ -33,7 +58,7 @@ export default function AdminPage() {
       <div className="space-y-6">
         <PageHeader
           title="Painel de Administração"
-          description="Gestão de contas e acessos dos operadores do sistema"
+          description="Gestão de contas, acessos, locais, cursos e vagas"
         />
 
         {error && (
@@ -49,21 +74,61 @@ export default function AdminPage() {
           <StatCard label="Coordenadores" value={coordinators} icon={Users} />
         </div>
 
-        <Card className="max-w-md border-border shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-base font-semibold">Usuários</CardTitle>
-            <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600"><Users className="size-5" /></div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">{users.length} contas cadastradas</p>
-            <Link
-              href="/admin/users"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full justify-between gap-1")}
-            >
-              Gerenciar usuários <ArrowRight className="size-3.5" />
-            </Link>
-          </CardContent>
-        </Card>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Card className="border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Usuários</CardTitle>
+              <div className="rounded-lg bg-blue-500/10 p-2 text-blue-600"><Users className="size-5" /></div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">{users.length} contas cadastradas</p>
+              <Link
+                href="/admin/users"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full justify-between gap-1")}
+              >
+                Gerenciar usuários <ArrowRight className="size-3.5" />
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-semibold">Locais</CardTitle>
+              <div className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600"><MapPin className="size-5" /></div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground">Cadastre os locais disponíveis para as vagas</p>
+              <Link
+                href="/admin/locations"
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full justify-between gap-1")}
+              >
+                Gerenciar locais <ArrowRight className="size-3.5" />
+              </Link>
+            </CardContent>
+          </Card>
+
+          {adminAreas.map((area) => {
+            const Icon = area.icon;
+
+            return (
+              <Card key={area.href} className="border-border shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-base font-semibold">{area.title}</CardTitle>
+                  <div className={`rounded-lg p-2 ${area.iconClassName}`}><Icon className="size-5" /></div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-xs text-muted-foreground">{area.description}</p>
+                  <Link
+                    href={area.href}
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }), "w-full justify-between gap-1")}
+                  >
+                    Gerenciar {area.title.toLowerCase()} <ArrowRight className="size-3.5" />
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
     </AppShell>
   );

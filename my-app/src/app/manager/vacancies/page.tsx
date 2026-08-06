@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { AppShell, PageHeader } from "@/components/layout";
+import { AppShell } from "@/components/layout";
 import { StatCard } from "@/components/shared/stat-card";
 import { Input } from "@/components/ui/input";
-import { buttonVariants } from "@/components/ui/button";
 import { Briefcase, Users, CalendarCheck, Search, Plus, CheckCircle2, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 interface ManagerVacancy {
   id: string;
