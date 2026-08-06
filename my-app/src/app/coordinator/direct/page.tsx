@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { mockStudents, mockVacancies } from "@/lib/mock-data";
 import type { StudentDTO, VacancyDTO } from "@/types";
+import { ToastCard } from "@/components/ui/toast-card";
 import { Users, Briefcase, Search, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -25,7 +26,7 @@ export default function CoordinatorDirectPage() {
   const [searchVacancy, setSearchVacancy] = useState("");
   const [searchStudent, setSearchStudent] = useState("");
   const [selectedVacancy, setSelectedVacancy] = useState<VacancyDTO | null>(null);
-  const [directedStudentId, setDirectedStudentId] = useState<string | null>(null);
+  const [directedStudentIds, setDirectedStudentIds] = useState<string[]>([]);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingStudent, setPendingStudent] = useState<StudentDTO | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
@@ -57,12 +58,12 @@ export default function CoordinatorDirectPage() {
 
   const handleConfirmDirection = () => {
     if (!pendingStudent) return;
-    setDirectedStudentId(pendingStudent.id);
+    setDirectedStudentIds((prev) => [...prev, pendingStudent.id]);
     setIsConfirmOpen(false);
     setSuccessMsg(
-      `${pendingStudent.name} foi direcionado(a) para a vaga "${selectedVacancy?.title}" com sucesso! O gestor responsável será notificado.`
+      `Aluno ${pendingStudent.name} direcionado com sucesso!`
     );
-    setTimeout(() => setSuccessMsg(""), 6000);
+    setTimeout(() => setSuccessMsg(""), 7000);
   };
 
   return (
@@ -165,7 +166,7 @@ export default function CoordinatorDirectPage() {
                 variant="ghost"
                 size="sm"
                 className="gap-1 text-primary-700 hover:text-primary-900"
-                onClick={() => { setStep("select-vacancy"); setDirectedStudentId(null); }}
+                onClick={() => { setStep("select-vacancy"); setDirectedStudentIds([]); }}
               >
                 <ArrowLeft className="size-3.5" /> Trocar vaga
               </Button>
@@ -184,7 +185,7 @@ export default function CoordinatorDirectPage() {
             <div className="space-y-3">
               {filteredStudents.map((student) => {
                 const initials = student.name.split(" ").map((n) => n[0]).slice(0, 2).join("");
-                const isDirected = directedStudentId === student.id;
+                const isDirected = directedStudentIds.includes(student.id);
 
                 return (
                   <div
@@ -250,11 +251,7 @@ export default function CoordinatorDirectPage() {
       </Dialog>
 
       {/* Toast de sucesso */}
-      {successMsg && (
-        <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium">
-          {successMsg}
-        </div>
-      )}
+      <ToastCard message={successMsg} variant="success" />
     </AppShell>
   );
 }

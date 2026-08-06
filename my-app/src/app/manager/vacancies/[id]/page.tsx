@@ -10,6 +10,7 @@ import { Search, Lock, Ban } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InterviewSchedulingModal } from "@/components/features/manager/interview-scheduling-modal";
+import { ToastCard } from "@/components/ui/toast-card";
 
 interface Candidate {
   id: string;
@@ -352,7 +353,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                 const isAssigned = assignedStudentIds.includes(candidate.id);
                 const isRejected = rejectedStudentIds.includes(candidate.id);
                 let badgeStyle = "text-emerald-600 border-emerald-300 bg-emerald-50";
-                if (candidate.matchPercentage < 50) badgeStyle = "text-rose-600 border-rose-300 bg-rose-50";
+                if (candidate.matchPercentage < 50) badgeStyle = "text-destructive border-rose-300 bg-rose-50";
                 else if (candidate.matchPercentage < 80) badgeStyle = "text-amber-600 border-amber-300 bg-amber-50";
 
                 return (
@@ -435,7 +436,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                           className={`text-xs font-semibold px-2.5 py-1 rounded-md border transition flex items-center gap-1 ${
                             isRejected
                               ? "bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200"
-                              : "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
+                              : "bg-destructive text-white border-rose-600 hover:bg-rose-700"
                           }`}
                         >
                           <Ban className="size-3" />
@@ -462,11 +463,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
         )}
 
         {/* Banner de Notificação de Sucesso */}
-        {interviewSuccessMessage && (
-          <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium animate-in fade-in slide-in-from-top-4">
-            {interviewSuccessMessage}
-          </div>
-        )}
+        <ToastCard message={interviewSuccessMessage} variant="success" />
       </div>
     </AppShell>
   );

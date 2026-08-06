@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Input } from "@/components/ui/input";
+import { ToastCard } from "@/components/ui/toast-card";
 import { useRouter } from "next/navigation";
 
 export default function NovaVagaPage() {
@@ -15,16 +16,16 @@ export default function NovaVagaPage() {
   const [successMsg, setSuccessMsg] = useState("");
 
   const handleCreate = () => {
-    if (!jobTitle.trim()) {
-      setSuccessMsg("Preencha o nome da vaga antes de continuar.");
-      setTimeout(() => setSuccessMsg(""), 4000);
+    if (!jobTitle.trim() || !description.trim()) {
+      setSuccessMsg("Preencha todos os campos obrigatórios (*).");
+      setTimeout(() => setSuccessMsg(""), 7000);
       return;
     }
     setSuccessMsg("Vaga criada com sucesso!");
     setTimeout(() => {
       setSuccessMsg("");
       router.push("/manager/vacancies");
-    }, 1800);
+    }, 2500);
   };
 
   return (
@@ -35,14 +36,12 @@ export default function NovaVagaPage() {
         { label: "Nova Vaga" },
       ]}
     >
-      <div className="space-y-6 pb-12">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold text-slate-900">Criar Nova Vaga</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Preencha os campos abaixo para disponibilizar uma nova vaga para os alunos
-            </p>
+            <h1 className="text-2xl font-bold text-slate-900">Abrir Nova Vaga</h1>
+            <p className="text-sm text-slate-500">Cadastre uma vaga para receber indicações de alunos.</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -55,7 +54,8 @@ export default function NovaVagaPage() {
             <button
               type="button"
               onClick={handleCreate}
-              className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 rounded-lg shadow-sm transition"
+              disabled={!jobTitle.trim() || !description.trim()}
+              className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition"
             >
               Criar Vaga
             </button>
@@ -98,7 +98,7 @@ export default function NovaVagaPage() {
 
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Descrição da Vaga
+              Descrição da Vaga <span className="text-red-500">*</span>
             </label>
             <textarea
               rows={4}
@@ -142,11 +142,7 @@ export default function NovaVagaPage() {
       </div>
 
       {/* Notificação */}
-      {successMsg && (
-        <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium">
-          {successMsg}
-        </div>
-      )}
+      <ToastCard message={successMsg} variant="success" />
     </AppShell>
   );
 }
