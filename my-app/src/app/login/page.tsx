@@ -19,6 +19,8 @@ import {
 } from "@/lib/mock-auth";
 import { UserRole } from "@/types";
 
+import { USER_ID_COOKIE_NAME, USER_NAME_COOKIE_NAME } from '@/lib/auth';
+
 type AuthenticatedUser = {
   id: string;
   name: string;
@@ -64,7 +66,7 @@ function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
     typeof user.name === "string" &&
     typeof user.username === "string" &&
     typeof user.role === "string" &&
-    ["ADMIN", "COORDINATOR", "MANAGER", "STUDENT"].includes(user.role)
+    ["ADMIN", "COORDINATOR", "MANAGER"].includes(user.role)
   );
 }
 
@@ -87,6 +89,8 @@ export default function Login() {
     // Role cookie must be JS-readable (no HttpOnly) so client components can
     // read it to render role-specific UI without a server round-trip.
     document.cookie = `${ROLE_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.role)}; path=/; max-age=86400; samesite=strict${secure}`;
+    document.cookie = `${USER_ID_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.id)}; path=/; max-age=86400; samesite=strict${secure}`;
+    document.cookie = `${USER_NAME_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.name)}; path=/; max-age=86400; samesite=strict${secure}`;
 
     // In a real login the backend sets the HttpOnly JWT cookie itself in the
     // Set-Cookie response header. Only the mock path needs to set it client-side.
@@ -219,6 +223,7 @@ export default function Login() {
           src="/assets/images/login/WEG-login-page.jpg"
           alt=""
           fill
+          sizes="(min-width: 1024px) 60vw, 0px"
           priority
           className="object-cover"
         />
@@ -232,6 +237,7 @@ export default function Login() {
             alt="Logo WEG"
             width={400}
             height={47}
+            style={{ width: "auto", height: "auto" }}
           />
         </div>
 
