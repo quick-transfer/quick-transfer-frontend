@@ -39,9 +39,9 @@ Cada teste contemplado neste plano possui a seguinte estrutura padronizada de at
   1. Renderizar o componente `Sidebar` passando as propriedades de perfil.
   2. Verificar os itens de menu renderizados na arvore DOM.
 - **Resultado Esperado:** 
-  - **MANAGER:** Exibe seções "Minhas Vagas", "Alunos" e "Entrevistas" (`/manager/vacancies`, `/manager/students`, `/manager/interviews`).
-  - **COORDINATOR:** Exibe seções "Painel", "Turnos", "Turmas", "Alunos" e "Solicitações".
-  - **ADMIN:** Exibe todas as seções incluindo "Painel Admin", "Usuários", "Locais", "Entrevistas" (`/admin/*`).
+  - **MANAGER:** Exibe "Minhas Vagas", "Alunos", "Entrevistas" e "Locais".
+  - **COORDINATOR:** Exibe "Painel", "Turmas", "Alunos", "Cursos" e "Direcionar Alunos".
+  - **ADMIN:** Exibe somente "Painel Admin" e "Usuários".
 - **Trecho de Código:**
 ```typescript
 import { render, screen } from "@testing-library/react";
@@ -131,7 +131,7 @@ describe("CT-003: Cadastro de Nova Turma", () => {
 ### CT-004: Edição e Exclusão de Registro com Confirmação Visual
 - **Funcionalidade Testada:** Edição e Exclusão na Gestão de Usuários (`src/app/admin/users/page.tsx`).
 - **Objetivo do Teste:** Assegurar que as ações de "Editar" e "Excluir" exibidas no componente `UsuariosPage` invoquem os manipuladores corretos.
-- **Pré-condições:** Acesso à página `/admin/users` com registros mockados `mockUsers`.
+- **Pré-condições:** Acesso à página `/admin/users` com a API autenticada.
 - **Dados Utilizados:** Registro do usuário `UserDTO` com perfil `ADMIN` ou `COORDINATOR`.
 - **Etapas de Execução:**
   1. Renderizar a página `UsuariosPage`.
@@ -159,15 +159,15 @@ describe("CT-004: Tabela de Usuários Admin - Ações de Edição e Exclusão", 
 
 ---
 
-### CT-005: Tratamento de Indisponibilidade da API e Fallback Gracioso
-- **Funcionalidade Testada:** Resiliência e Fallback no cliente de API (`src/lib/api.ts`).
+### CT-005: Tratamento de Indisponibilidade da API
+- **Funcionalidade Testada:** Resiliência do cliente de API (`src/lib/api.ts`).
 - **Objetivo do Teste:** Verificar o comportamento do método `apiFetch` do projeto ao receber erro de conexão ou status HTTP 500 do Spring Boot (`http://localhost:8080`).
 - **Pré-condições:** Servidor da API simulando indisponibilidade.
 - **Dados Utilizados:** Chamada para o endpoint `/api/v1/students`.
 - **Etapas de Execução:**
   1. Invocar a função `apiFetch("/students")` com endpoint inacessível.
   2. Tratar a exceção capturada para exibir feedback gracioso.
-- **Resultado Esperado:** O sistema captura o erro via `try/catch` e disponibiliza mensagens amigáveis ou dados em *fallback mock*.
+- **Resultado Esperado:** O sistema captura o erro e exibe uma mensagem amigável, sem simular persistência local em uma sessão real.
 - **Trecho de Código:**
 ```typescript
 import { apiFetch } from "@/lib/api";
@@ -218,7 +218,7 @@ describe("CT-006: Menu Mobile e Responsividade", () => {
 - **Funcionalidade Testada:** Módulo do Gestor (`src/app/manager/vacancies/page.tsx`, `src/app/manager/students/page.tsx` e `src/app/manager/interviews/page.tsx`).
 - **Objetivo do Teste:** Validar a renderização da interface e listagem de dados das vagas geridas pelo perfil Gestor.
 - **Pré-condições:** Autenticado com perfil `MANAGER`.
-- **Dados Utilizados:** Dados de `mockVacancies` em `src/lib/mock-data.ts`.
+- **Dados Utilizados:** Vagas retornadas pela API.
 - **Etapas de Execução:**
   1. Acessar e renderizar a rota `/manager/vacancies`.
   2. Verificar os cards e dados das vagas ofertadas.
@@ -240,14 +240,14 @@ describe("CT-007: Módulo do Gestor - Minhas Vagas", () => {
 
 ---
 
-### CT-008: Telas do Perfil Coordenador (Dashboard, Turnos, Turmas, Alunos, Solicitações)
-- **Funcionalidade Testada:** Módulo do Coordenador (`src/app/dashboard/page.tsx`, `src/app/requests/page.tsx`).
-- **Objetivo do Teste:** Testar a renderização dos cards de estatísticas do Dashboard e solicitações de transferência do Coordenador.
+### CT-008: Telas do Perfil Coordenador (Dashboard, Turmas, Alunos, Cursos e Direcionamento)
+- **Funcionalidade Testada:** Módulo do Coordenador (`src/app/dashboard/page.tsx`, `src/app/classes/page.tsx`, `src/app/students/page.tsx`, `src/app/courses/page.tsx` e `src/app/coordinator/direct/page.tsx`).
+- **Objetivo do Teste:** Testar os cards do Dashboard, a consulta das entidades acadêmicas e o direcionamento de alunos para vagas.
 - **Pré-condições:** Autenticado com perfil `COORDINATOR`.
-- **Dados Utilizados:** Dados mockados de solicitações e alunos.
+- **Dados Utilizados:** Dados de alunos, turmas, cursos e vagas.
 - **Etapas de Execução:**
   1. Renderizar o componente de Dashboard (`/dashboard`).
-  2. Verificar os cards estatísticos (Total de Alunos, Turmas, Solicitações Pendentes).
+  2. Verificar os cards estatísticos (Total de Alunos, Turmas Ativas e Vagas Disponíveis).
 - **Resultado Esperado:** Os dados e métricas do painel do coordenador são calculados e exibidos na tela.
 - **Trecho de Código:**
 ```typescript
@@ -266,14 +266,14 @@ describe("CT-008: Módulo Coordenador - Painel Dashboard", () => {
 
 ---
 
-### CT-009: Telas do Perfil Administrador (Usuários, Locais, Cursos, Vagas, Turmas, Entrevistas e Configurações)
+### CT-009: Telas do Perfil Administrador (Usuários)
 - **Funcionalidade Testada:** Módulo Geral de Administração (`src/app/admin/page.tsx`).
 - **Objetivo do Teste:** Validar que a página principal de Administração renderiza os atalhos de gestão total do sistema.
 - **Pré-condições:** Autenticado com perfil `ADMIN`.
 - **Dados Utilizados:** Seções do painel administrativo.
 - **Etapas de Execução:**
   1. Renderizar a rota `/admin`.
-  2. Verificar a presença dos links de acesso a Usuários, Locais, Cursos, Vagas e Configurações.
+  2. Verificar a presença do acesso a Usuários e a ausência dos módulos de outros perfis.
 - **Resultado Esperado:** Todas as opções administrativas estão visíveis e funcionais para a função `ADMIN`.
 - **Trecho de Código:**
 ```typescript

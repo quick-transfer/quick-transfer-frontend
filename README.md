@@ -101,9 +101,9 @@ A aplicação utiliza o **App Router** do Next.js e organiza as rotas por perfil
 
 | Perfil | Rota Inicial | Módulos Disponíveis |
 | :--- | :--- | :--- |
-| `ADMIN` | `/admin` | Painel Admin, Usuários, Locais, Cursos, Vagas, Turmas, Entrevistas, Seções, Configurações |
-| `COORDINATOR` | `/dashboard` | Painel, Turnos, Turmas, Alunos, Cursos, Solicitações |
-| `MANAGER` | `/manager/vacancies` | Minhas Vagas, Meus Alunos, Entrevistas |
+| `ADMIN` | `/admin` | Painel Admin e Usuários |
+| `COORDINATOR` | `/dashboard` | Painel, Turmas, Alunos, Cursos e Direcionamento |
+| `MANAGER` | `/manager/vacancies` | Minhas Vagas, Alunos, Entrevistas e Locais |
 
 O controle de acesso é aplicado em dois níveis:
 1. **Next.js Middleware (`src/middleware.ts`):** Intercepta todas as requisições de navegação, valida a presença e validade do token JWT e redireciona o usuário para a rota inicial de seu perfil caso tente acessar uma rota não permitida.
@@ -120,18 +120,17 @@ O controle de acesso é aplicado em dois níveis:
 
 - **Módulo do Administrador (`/admin`):**
   - Gestão completa de Usuários (CRUD com modais de confirmação).
-  - Gestão de Locais, Cursos, Vagas, Turmas e Entrevistas.
-  - Configurações do sistema e painel de controle com seções administrativas.
 
 - **Módulo do Coordenador (`/dashboard`):**
-  - Painel de controle com cards de estatísticas (Total de Alunos, Turmas, Solicitações Pendentes).
-  - Gestão de Turnos, Turmas, Alunos e Cursos.
-  - Acompanhamento de Solicitações de transferência.
+  - Painel de controle com dados reais de alunos, turmas e vagas.
+  - Gestão de Turmas, Alunos e Cursos.
+  - Cadastro de aluno como entidade acadêmica, sem conta de acesso.
 
 - **Módulo do Gestor (`/manager`):**
   - Visualização e gerenciamento das próprias Vagas.
   - Acompanhamento dos Alunos vinculados.
   - Agendamento e acompanhamento de Entrevistas.
+  - Gestão dos locais utilizados pelas vagas.
 
 - **Componentes Compartilhados:**
   - `DataTable`: Tabela genérica e reutilizável com suporte a estado de carregamento (skeleton), paginação e ações por linha.
@@ -167,8 +166,6 @@ quick-transfer-frontend/
     │   │   ├── dashboard/          # Painel de controle do Coordenador
     │   │   ├── login/              # Tela de autenticação
     │   │   ├── manager/            # Módulo Gestor (vacancies, students, interviews)
-    │   │   ├── requests/           # Solicitações de transferência
-    │   │   ├── shifts/             # Gestão de Turnos
     │   │   ├── students/           # Gestão de Alunos
     │   │   ├── globals.css         # Estilos globais e variáveis CSS (design tokens)
     │   │   └── layout.tsx          # Layout raiz (fonte Manrope, metadados globais)
@@ -247,3 +244,4 @@ O projeto documenta um plano de testes abrangente (`PLANO_DE_TESTES.md`) baseado
 2. **Ausência de Gerenciamento de Estado Global:** A aplicação atual não utiliza uma biblioteca de gerenciamento de estado global (ex.: Redux, Zustand ou React Query). O estado é gerenciado localmente por componente e via `useState`/`useEffect`, o que pode demandar refatoração em funcionalidades de maior complexidade.
 3. **Validação de Assinatura JWT no Cliente:** O middleware frontend valida apenas o formato e a expiração do JWT localmente, sem verificar a assinatura criptográfica. A validação completa da assinatura é de responsabilidade do backend em cada requisição autenticada.
 4. **Dados Mock em Código:** Os dados fictícios para desenvolvimento e testes estão hardcoded em `src/lib/mock-data.ts`, sem integração com um servidor mock dedicado (ex.: MSW - Mock Service Worker), o que limita a fidelidade dos testes de integração.
+5. **Associação Aluno–Vaga:** O contrato OpenAPI atual não expõe um endpoint ou DTO que persista diretamente `studentId` e `vacancyId`. O frontend bloqueia essa gravação para não transformar o status global do aluno em um vínculo incorreto com todas as vagas.
