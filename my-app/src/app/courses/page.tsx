@@ -169,7 +169,7 @@ export default function CoordinatorCoursesPage() {
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
         )}
         <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-muted p-1">
+          <TabsList className="bg-white p-1">
             <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
             <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
             <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
