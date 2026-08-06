@@ -131,7 +131,7 @@ export default function ManagerInterviewsPage() {
     setNotice("");
 
     try {
-      await sendInterviewEmail(interview.id, student.email);
+      await sendInterviewEmail(interview.id);
       setNotice(`Convite reenviado para ${student.email}.`);
     } catch (requestError) {
       setError(

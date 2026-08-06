@@ -1,4 +1,10 @@
-import { apiFetch } from "@/lib/api";
+import {
+  apiFetch,
+  buildPageQuery,
+  pageContent,
+  type PageQuery,
+  type PageResponse,
+} from "@/lib/api";
 
 // ── Enumerations ──
 
@@ -171,8 +177,14 @@ export const interviewStatusLabels: Record<string, string> = {
 // ── API functions ──
 // IDs are always encodeURIComponent'd to handle UUIDs safely in path segments.
 
-export function getVacancies() {
-  return apiFetch<Vacancy[]>("/vacancy/find/all");
+export function getVacanciesPage(query: PageQuery = {}) {
+  return apiFetch<PageResponse<Vacancy>>(
+    `/vacancy/find/all${buildPageQuery(query)}`
+  );
+}
+
+export async function getVacancies(query: PageQuery = {}) {
+  return pageContent(await getVacanciesPage(query));
 }
 
 export function getVacancy(id: string) {
@@ -199,8 +211,14 @@ export function deleteVacancy(id: string) {
   });
 }
 
-export function getStudents() {
-  return apiFetch<Student[]>("/student/find/all");
+export function getStudentsPage(query: PageQuery = {}) {
+  return apiFetch<PageResponse<Student>>(
+    `/student/find/all${buildPageQuery(query)}`
+  );
+}
+
+export async function getStudents(query: PageQuery = {}) {
+  return pageContent(await getStudentsPage(query));
 }
 
 export function getStudent(id: string) {
@@ -220,15 +238,23 @@ export function updateStudentInterviewStatus(
 }
 
 // studentName filter is applied server-side; no client-side filtering fallback.
-export function getSkills(studentName?: string) {
-  if (!studentName) return apiFetch<Skill[]>("/skill/find/all");
-  return apiFetch<Skill[]>(
-    `/skill/search?studentName=${encodeURIComponent(studentName)}`
+export async function getSkills(studentName?: string) {
+  const response = !studentName
+    ? await apiFetch<PageResponse<Skill>>("/skill/find/all")
+    : await apiFetch<PageResponse<Skill>>(
+        `/skill/search?studentName=${encodeURIComponent(studentName)}`
+      );
+  return pageContent(response);
+}
+
+export function getPlacesPage(query: PageQuery = {}) {
+  return apiFetch<PageResponse<Place>>(
+    `/place/find/all${buildPageQuery(query)}`
   );
 }
 
-export function getPlaces() {
-  return apiFetch<Place[]>("/place/find/all");
+export async function getPlaces(query: PageQuery = {}) {
+  return pageContent(await getPlacesPage(query));
 }
 
 export function createPlace(input: PlaceInput) {
@@ -251,8 +277,14 @@ export function deletePlace(id: string) {
   });
 }
 
-export function getManagers() {
-  return apiFetch<Manager[]>("/manager/find/all");
+export function getManagersPage(query: PageQuery = {}) {
+  return apiFetch<PageResponse<Manager>>(
+    `/manager/find/all${buildPageQuery(query)}`
+  );
+}
+
+export async function getManagers(query: PageQuery = {}) {
+  return pageContent(await getManagersPage(query));
 }
 
 /**
@@ -275,8 +307,14 @@ export function createCoordinator(input: CoordinatorInput) {
   });
 }
 
-export function getInterviews() {
-  return apiFetch<Interview[]>("/interview/find/all");
+export function getInterviewsPage(query: PageQuery = {}) {
+  return apiFetch<PageResponse<Interview>>(
+    `/interview/find/all${buildPageQuery(query)}`
+  );
+}
+
+export async function getInterviews(query: PageQuery = {}) {
+  return pageContent(await getInterviewsPage(query));
 }
 
 export function createInterview(input: InterviewInput) {
@@ -288,11 +326,11 @@ export function createInterview(input: InterviewInput) {
 
 /**
  * Triggers the backend to send an invitation email for a scheduled interview.
- * Email is passed as a query param because the endpoint does not accept a body.
+ * The backend resolves the recipient from the interview and authenticated manager.
  */
-export function sendInterviewEmail(interviewId: string, email: string) {
+export function sendInterviewEmail(interviewId: string) {
   return apiFetch<string>(
-    `/manager/interview/sendEmail/${encodeURIComponent(interviewId)}?email=${encodeURIComponent(email)}`,
+    `/manager/interview/sendEmail/${encodeURIComponent(interviewId)}`,
     { method: "POST" }
   );
 }
