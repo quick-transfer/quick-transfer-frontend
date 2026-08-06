@@ -13,6 +13,9 @@ export const AUTH_COOKIE_NAME = "JWT";
  */
 export const ROLE_COOKIE_NAME = "userRole";
 
+export const USER_ID_COOKIE_NAME = 'userId';
+export const USER_NAME_COOKIE_NAME = 'userName';
+
 /**
  * Checks only whether a JWT has a valid shape and has not expired.
  * Intentionally does NOT verify the signature — that is the backend's responsibility
@@ -54,7 +57,7 @@ export function isJwtFresh(token?: string | null): boolean {
  * Defaults to `/dashboard` when the role is unknown, rather than blocking the user.
  */
 export function getRedirectPathByRole(role?: UserRole | string | null): string {
-  if (!role) return "/dashboard";
+  if (!role) return "/login";
 
   const normalizedRole = role.toUpperCase();
 
@@ -68,7 +71,9 @@ export function getRedirectPathByRole(role?: UserRole | string | null): string {
     case "GESTOR":
       return "/manager/vacancies";
     default:
-      return "/dashboard";
+      // Um papel desconhecido não possui rota inicial. Enviá-lo para /dashboard
+      // criava um loop, pois essa rota é exclusiva do coordenador.
+      return "/login";
   }
 }
 
@@ -91,7 +96,9 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
 
   const normalizedRole = role.toUpperCase();
 
-  if (normalizedRole === "ADMIN") return true;
+  if (normalizedRole === "ADMIN") {
+    return pathname === "/admin" || pathname === "/admin/users";
+  }
 
   if (pathname.startsWith("/admin")) {
     return false;
@@ -102,7 +109,7 @@ export function isRouteAllowedForRole(pathname: string, role?: UserRole | string
   }
 
   // Exact-match or prefix-with-slash prevents `/dashboard-extra` matching `/dashboard`.
-  const coordinatorRoutes = ["/dashboard", "/shifts", "/classes", "/students", "/courses", "/coordinator"];
+  const coordinatorRoutes = ["/dashboard", "/classes", "/students", "/courses", "/coordinator"];
   if (coordinatorRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"))) {
     return normalizedRole === "COORDINATOR" || normalizedRole === "COORDENADOR";
   }

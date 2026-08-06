@@ -10,7 +10,7 @@ import {
 
 // Both cookies are always deleted together — leaving a stale role cookie
 // without a session token would cause the sidebar to render the wrong nav
-// on the next visit before the middleware runs.
+// on the next visit before the proxy runs.
 function redirectToLogin(request: NextRequest) {
   const response = NextResponse.redirect(new URL("/login", request.url));
   response.cookies.delete(AUTH_COOKIE_NAME);
@@ -19,7 +19,7 @@ function redirectToLogin(request: NextRequest) {
 }
 
 /**
- * Route protection and RBAC middleware.
+ * Route protection and RBAC proxy.
  *
  * Runs on every request matched by `config.matcher` (all routes except static
  * assets and the backend proxy). Enforces two rules in order:
@@ -28,10 +28,10 @@ function redirectToLogin(request: NextRequest) {
  *    the role's default landing page.
  *
  * Signature validation is intentionally omitted here; it happens in the backend
- * on every authenticated API call. This middleware only blocks obviously invalid
+ * on every authenticated API call. This proxy only blocks obviously invalid
  * or expired tokens to avoid unnecessary round-trips.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const authToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -62,6 +62,17 @@ export function middleware(request: NextRequest) {
   // redirect them to their own landing page rather than showing a 403.
   if (!isRouteAllowedForRole(pathname, userRole)) {
     const allowedPath = getRedirectPathByRole(userRole);
+
+    // Nunca redireciona uma rota para ela mesma (nem para outra rota também
+    // proibida para o papel). Isso evita ciclos infinitos quando chega um papel
+    // inválido, antigo ou ainda sem área própria no frontend.
+    if (
+      allowedPath === pathname ||
+      (allowedPath !== "/login" && !isRouteAllowedForRole(allowedPath, userRole))
+    ) {
+      return redirectToLogin(request);
+    }
+
     return NextResponse.redirect(new URL(allowedPath, request.url));
   }
 

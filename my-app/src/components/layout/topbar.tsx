@@ -1,13 +1,7 @@
 "use client";
 
-import { Bell, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -79,6 +73,13 @@ export function Topbar({
           ))}
         </BreadcrumbList>
       </Breadcrumb>
+      <div className="flex items-center gap-3">
+        <span className="hidden text-sm font-medium text-slate-700 sm:inline">{userName}</span>
+        <Avatar className="size-9 border border-slate-200">
+          <AvatarImage src={userAvatar} alt={userName} />
+          <AvatarFallback className="bg-primary-800 text-xs font-bold text-white">{initials}</AvatarFallback>
+        </Avatar>
+      </div>
     </header>
   );
 }

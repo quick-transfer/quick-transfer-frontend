@@ -6,7 +6,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ROLE_COOKIE_NAME } from "@/lib/auth";
 import type { UserRole } from "@/types";
 import { Separator } from "@base-ui/react/separator";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
+import { ConnectivityBanner } from "@/components/shared/connectivity-banner";
 
 // Accepts Portuguese aliases from the backend alongside the canonical English values.
 function normalizeRole(roleStr?: string | null): UserRole {
@@ -14,7 +15,6 @@ function normalizeRole(roleStr?: string | null): UserRole {
   const upper = roleStr.toUpperCase();
   if (upper === "COORDENADOR" || upper === "COORDINATOR") return "COORDINATOR";
   if (upper === "GESTOR" || upper === "MANAGER") return "MANAGER";
-  if (upper === "STUDENT" || upper === "ALUNO") return "STUDENT";
   return "ADMIN";
 }
 
@@ -35,19 +35,16 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, breadcrumbs }: AppShellProps) {
-  // Initialize to ADMIN to avoid a flash of wrong nav during hydration.
-  // The useEffect immediately reads the real role from the cookie on mount.
-  const [role, setRole] = useState<UserRole>("ADMIN");
-
-  useEffect(() => {
-    setRole(getRoleFromCookie());
-  }, []);
+  const role = useSyncExternalStore<UserRole>(
+    () => () => undefined,
+    getRoleFromCookie,
+    () => 'ADMIN' as UserRole
+  );
 
   const roleLabels: Record<UserRole, string> = {
     ADMIN: "Administrador",
     COORDINATOR: "Coordenador",
     MANAGER: "Gestor",
-    STUDENT: "Aluno",
   };
 
   return (
@@ -57,6 +54,7 @@ export function AppShell({ children, breadcrumbs }: AppShellProps) {
         <div className="lg:pl-60 flex min-h-screen flex-col">
           <Topbar breadcrumbs={breadcrumbs} userName={roleLabels[role] || "Usuário"} />
           <Separator className="bg-primary-800 h-px" style={{ width: '93%', marginLeft: '1.7%', marginRight: '5%' }}/>
+          <ConnectivityBanner />
           <main className="flex-1 p-6 pr-[5vw]">{children}</main>
         </div>
       </div>
