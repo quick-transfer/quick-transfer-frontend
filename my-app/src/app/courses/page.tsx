@@ -61,7 +61,7 @@ export default function CoordinatorCoursesPage() {
     setFormName("");
     setFormCode("");
     setSuccessMsg("Curso criado com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 4000);
+    setTimeout(() => setSuccessMsg(""), 7000);
   };
 
   const columns: DataTableColumn<CourseDTO>[] = [
@@ -148,7 +148,7 @@ export default function CoordinatorCoursesPage() {
         />
 
         <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-muted p-1">
+          <TabsList className="bg-white p-1">
             <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
             <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
             <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>

@@ -25,12 +25,6 @@ export default function AlunosPage() {
           .join("");
         return (
           <div className="flex items-center gap-3">
-            <Avatar className="size-9">
-              {student.avatarUrl && <AvatarImage src={student.avatarUrl} alt={student.name} />}
-              <AvatarFallback className="bg-primary-600 text-white font-semibold text-xs">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
             <div>
               <p className="font-medium text-foreground">{student.name}</p>
               <p className="text-xs text-muted-foreground">Matrícula: {student.registration}</p>

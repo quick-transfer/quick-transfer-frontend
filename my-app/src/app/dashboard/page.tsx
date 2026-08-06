@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { buttonVariants } from "@/components/ui/button";
 import { mockStudents, mockTransferRequests, mockVacancies } from "@/lib/mock-data";
 import type { VacancyDTO } from "@/types";
-import { Users, FileText, ArrowUpRight, Briefcase, Plus } from "lucide-react";
+import { Users, FileText, ArrowUpRight, Briefcase, Plus, Eye } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -65,10 +65,10 @@ export default function DashboardPage() {
       className: "text-right",
       render: (vacancy) => (
         <Link
-          href={`/admin/vacancies?id=${vacancy.id}`}
+          href={`/coordinator/direct`}
           className={cn(buttonVariants({ variant: "outline", size: "sm" }), 'gap-1')}
         >
-          Detalhes
+          Direcionar
         </Link>
       ),
     },
@@ -82,10 +82,10 @@ export default function DashboardPage() {
           description="Visão geral da ocupação de turnos, turmas ativas e solicitações pendentes"
           actions={
             <Link
-              href="/classes/new"
+              href="/classes"
               className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
             >
-              <Plus className="size-4" /> Nova Turma
+              <Eye className="size-4" /> Ver Turmas
             </Link>
           }
         />
