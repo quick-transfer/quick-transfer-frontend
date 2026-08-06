@@ -132,12 +132,12 @@ export default function ManagerInterviewsPage() {
 
     try {
       await sendInterviewEmail(interview.id, student.email);
-      setNotice(`Convite reenviado para ${student.email}.`);
+      setNotice(`Convite enviado para ${student.email}.`);
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Não foi possível reenviar o convite."
+          : "Não foi possível enviar o convite."
       );
     } finally {
       setSendingId(null);
@@ -292,7 +292,7 @@ export default function ManagerInterviewsPage() {
                     <Mail className="size-4" />
                     {sendingId === interview.id
                       ? "Enviando..."
-                      : "Reenviar convite"}
+                      : "Enviar convite"}
                   </Button>
                 </article>
               );
