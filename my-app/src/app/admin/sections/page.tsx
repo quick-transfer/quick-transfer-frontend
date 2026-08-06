@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +14,8 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Plus, Briefcase, MapPin, Eye, Users, CalendarCheck } from "lucide-react";
-import { ToastCard } from "@/components/ui/toast-card";
+import { Plus, Briefcase, MapPin, Eye, CalendarCheck } from "lucide-react";
+import { readCollection, writeCollection } from '@/lib/offline-store';
 
 // ── Tipos do backend ──────────────────────────────────────────────────────────
 type Park = "NORTE" | "SUL" | "CENTRO";
@@ -104,7 +104,13 @@ export default function AdminSectionsPage() {
   const [newPark, setNewPark] = useState<Park>("NORTE");
   const [newSection, setNewSection] = useState<Section>("PRODUCAO");
   const [successMsg, setSuccessMsg] = useState("");
-  const [toastVariant, setToastVariant] = useState<"success" | "destructive">("success");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setSections(readCollection('manager-sections', mockSections));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handleViewDetail = (section: ManagerSectionDTO) => {
     setDetailSection(section);
@@ -115,18 +121,21 @@ export default function AdminSectionsPage() {
     if (!newPlaceName.trim()) return;
     const newItem: ManagerSectionDTO = {
       id: `sec-${Date.now()}`,
-      placeName: newPlaceName.trim(),
+      placeName: newPlaceName,
       park: newPark,
       section: newSection,
       vacancies: [],
       interviews: [],
     };
-    setSections((prev) => [...prev, newItem]);
+    setSections((prev) => {
+      const next = [...prev, newItem];
+      writeCollection('manager-sections', next);
+      return next;
+    });
     setNewPlaceName("");
     setIsNewOpen(false);
-    setToastVariant("success");
     setSuccessMsg("Seção de gestor cadastrada com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 7000);
+    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
   const columns: DataTableColumn<ManagerSectionDTO>[] = [
@@ -216,107 +225,45 @@ export default function AdminSectionsPage() {
         <PageHeader
           title="Gestores e Seções"
           description="Controle das unidades fabris, parques, seções e seus respectivos gestores, vagas e entrevistas"
+          actions={
+            <Button
+              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              onClick={() => setIsNewOpen(true)}
+            >
+              <Plus className="size-4" /> Nova Seção
+            </Button>
+          }
         />
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Lado Esquerdo - Tabela e Stats */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Stat Cards rápidos */}
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Total de Seções</p>
-                <p className="text-3xl font-bold text-slate-900">{sections.length}</p>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Vagas Cadastradas</p>
-                <p className="text-3xl font-bold text-slate-900">
-                  {sections.reduce((acc, s) => acc + s.vacancies.length, 0)}
-                </p>
-              </div>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Entrevistas Registradas</p>
-                <p className="text-3xl font-bold text-slate-900">
-                  {sections.reduce((acc, s) => acc + s.interviews.length, 0)}
-                </p>
-              </div>
-            </div>
-
-            <DataTable
-              columns={columns}
-              data={sections}
-              pageSize={10}
-              searchable
-              searchPlaceholder="Buscar por local ou seção..."
-              searchKeys={["placeName", "park", "section"]}
-              getRowKey={(row) => row.id}
-            />
+        {/* Stat Cards rápidos */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Total de Seções</p>
+            <p className="text-3xl font-bold text-slate-900">{sections.length}</p>
           </div>
-
-          {/* Lado Direito - Nova Seção */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Nova Seção</h2>
-              <p className="text-xs text-slate-500">Preencha os campos para cadastrar uma nova seção.</p>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreateSection();
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nome do Local / Unidade <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={newPlaceName}
-                  onChange={(e) => setNewPlaceName(e.target.value)}
-                  placeholder="Ex: Unidade Fabril 3 - Blumenau"
-                  className="h-10 border-slate-200 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Parque</label>
-                  <select
-                    value={newPark}
-                    onChange={(e) => setNewPark(e.target.value as Park)}
-                    className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="NORTE">Parque Norte</option>
-                    <option value="SUL">Parque Sul</option>
-                    <option value="CENTRO">Centro</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Seção</label>
-                  <select
-                    value={newSection}
-                    onChange={(e) => setNewSection(e.target.value as Section)}
-                    className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="PRODUCAO">Produção</option>
-                    <option value="MANUTENCAO">Manutenção</option>
-                    <option value="QUALIDADE">Qualidade</option>
-                    <option value="TI">Tecnologia da Informação</option>
-                    <option value="LOGISTICA">Logística</option>
-                  </select>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={!newPlaceName.trim()}
-                className="w-full bg-primary-900 text-white hover:bg-primary-950 gap-2 h-10"
-              >
-                <Plus className="size-4" /> Cadastrar Seção
-              </Button>
-            </form>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Vagas Cadastradas</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {sections.reduce((acc, s) => acc + s.vacancies.length, 0)}
+            </p>
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">Entrevistas Registradas</p>
+            <p className="text-3xl font-bold text-slate-900">
+              {sections.reduce((acc, s) => acc + s.interviews.length, 0)}
+            </p>
           </div>
         </div>
+
+        <DataTable
+          columns={columns}
+          data={sections}
+          pageSize={10}
+          searchable
+          searchPlaceholder="Buscar por local ou seção..."
+          searchKeys={["placeName", "park", "section"]}
+          getRowKey={(row) => row.id}
+        />
       </div>
 
       {/* Modal de Detalhes */}
@@ -401,8 +348,77 @@ export default function AdminSectionsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Modal de Nova Seção */}
+      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">Nova Seção de Gestor</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Preencha os campos para cadastrar uma nova seção no sistema.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                Nome do Local / Unidade <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={newPlaceName}
+                onChange={(e) => setNewPlaceName(e.target.value)}
+                placeholder="Ex: Unidade Fabril 3 - Blumenau"
+                className="h-10 border-slate-200"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Parque</label>
+                <select
+                  value={newPark}
+                  onChange={(e) => setNewPark(e.target.value as Park)}
+                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="NORTE">Parque Norte</option>
+                  <option value="SUL">Parque Sul</option>
+                  <option value="CENTRO">Centro</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Seção</label>
+                <select
+                  value={newSection}
+                  onChange={(e) => setNewSection(e.target.value as Section)}
+                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="PRODUCAO">Produção</option>
+                  <option value="MANUTENCAO">Manutenção</option>
+                  <option value="QUALIDADE">Qualidade</option>
+                  <option value="TI">Tecnologia da Informação</option>
+                  <option value="LOGISTICA">Logística</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={handleCreateSection}
+              disabled={!newPlaceName.trim()}
+              className="bg-primary-900 text-white hover:bg-primary-950"
+            >
+              Cadastrar Seção
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Toast de sucesso */}
-      <ToastCard message={successMsg} variant={toastVariant} />
+      {successMsg && (
+        <div className="fixed top-20 right-6 z-50 max-w-sm p-4 bg-emerald-800 text-white rounded-lg shadow-xl text-sm font-medium">
+          {successMsg}
+        </div>
+      )}
     </AppShell>
   );
 }
