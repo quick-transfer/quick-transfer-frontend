@@ -5,7 +5,6 @@ import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -22,17 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockUsers } from "@/lib/mock-data";
 import {
   createCoordinator,
   createManager,
+  deleteCoordinator,
+  deleteManager,
   getManagers,
+  getCoordinators,
   type Coordinator,
   type CoordinatorInput,
   type Manager,
   type ManagerInput,
   type ManagerSection,
+  updateCoordinator,
+  updateManager,
 } from "@/lib/manager-api";
+import { deleteAppUser, getAppUsers, updateAppUser } from '@/lib/application-api';
 import type { UserDTO } from "@/types";
 import { UserPlus, Edit, Trash2 } from "lucide-react";
 
@@ -77,23 +81,28 @@ function coordinatorToUser(coordinator: Coordinator): UserDTO {
 }
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<UserDTO[]>(mockUsers);
+  const [users, setUsers] = useState<UserDTO[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateUserForm>(initialUserForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [editingUser, setEditingUser] = useState<UserDTO | null>(null);
+  const [deletingUser, setDeletingUser] = useState<UserDTO | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [actionSaving, setActionSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    // Enquanto os demais perfis usam mocks, substituímos somente os gestores pelos dados reais da API.
-    getManagers()
-      .then((managers) => {
+    Promise.all([getManagers(), getCoordinators(), getAppUsers()])
+      .then(([managers, coordinators, appUsers]) => {
         if (!active) return;
         setUsers([
-          ...mockUsers.filter((user) => user.role !== "MANAGER"),
+          ...appUsers.filter((user) => user.role === "ADMIN"),
           ...managers.map(managerToUser),
+          ...coordinators.map(coordinatorToUser),
         ]);
       })
       .catch((requestError) => {
@@ -101,7 +110,7 @@ export default function UsuariosPage() {
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Não foi possível carregar os gestores.",
+            : "Não foi possível carregar os usuários.",
         );
       });
 
@@ -191,35 +200,81 @@ export default function UsuariosPage() {
     }
   };
 
+  const openEditDialog = (user: UserDTO) => {
+    setEditingUser(user);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setError('');
+  };
+
+  const handleEditUser = async () => {
+    if (!editingUser || !editName.trim()) return;
+    setActionSaving(true);
+    setError('');
+    try {
+      let updated: UserDTO;
+      if (editingUser.role === 'MANAGER') {
+        updated = managerToUser(await updateManager(editingUser.id, {
+          name: editName.trim(), email: editEmail.trim(), section: 'IT',
+        }));
+      } else if (editingUser.role === 'COORDINATOR') {
+        updated = coordinatorToUser(await updateCoordinator(editingUser.id, {
+          name: editName.trim(), email: editEmail.trim(),
+        }));
+      } else {
+        updated = await updateAppUser({ ...editingUser, name: editName.trim(), email: editEmail.trim() });
+      }
+      setUsers((current) => current.map((user) => user.id === updated.id ? updated : user));
+      setEditingUser(null);
+      setNotice('Usuário atualizado com sucesso.');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível atualizar o usuário.');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+    setActionSaving(true);
+    setError('');
+    try {
+      if (deletingUser.role === 'MANAGER') await deleteManager(deletingUser.id);
+      else if (deletingUser.role === 'COORDINATOR') await deleteCoordinator(deletingUser.id);
+      else await deleteAppUser(deletingUser.id);
+      setUsers((current) => current.filter((user) => user.id !== deletingUser.id));
+      setNotice('Usuário excluído com sucesso.');
+      setDeletingUser(null);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível excluir o usuário.');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
   const columns: DataTableColumn<UserDTO>[] = [
     {
       key: "name",
       header: "Usuário",
       sortable: true,
-      render: (user) => {
-        const initials = user.name
-          .split(" ")
-          .map((namePart) => namePart[0])
-          .slice(0, 2)
-          .join("");
-        return (
+      render: (user) => (
           <div className="flex items-center gap-3">
             <div>
               <p className="font-medium text-foreground">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
-        );
-      },
+      ),
     },
     {
       key: "role",
       header: "Papel / Função",
       sortable: true,
       render: (user) => {
+        if (user.role === "ADMIN") return <Badge variant="danger">Administrador</Badge>;
         if (user.role === "COORDINATOR") return <Badge variant="info">Coordenador</Badge>;
         if (user.role === "MANAGER") return <Badge variant="warning">Gestor / Supervisor</Badge>;
-        return <Badge variant="neutral">Aluno</Badge>;
+        return <Badge variant="neutral">Perfil desconhecido</Badge>;
       },
     },
     {
@@ -236,9 +291,9 @@ export default function UsuariosPage() {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: () => (
+      render: (user) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label="Editar usuário">
+          <Button variant="ghost" size="icon-sm" aria-label="Editar usuário" onClick={() => openEditDialog(user)}>
             <Edit className="size-3.5" />
           </Button>
           <Button
@@ -246,6 +301,7 @@ export default function UsuariosPage() {
             size="icon-sm"
             className="text-destructive"
             aria-label="Excluir usuário"
+            onClick={() => setDeletingUser(user)}
           >
             <Trash2 className="size-3.5" />
           </Button>
@@ -452,6 +508,45 @@ export default function UsuariosPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="bg-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar usuário</DialogTitle>
+            <DialogDescription>Atualize os dados cadastrais do usuário.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <label className="block space-y-1.5 text-sm font-medium">
+              Nome
+              <Input value={editName} onChange={(event) => setEditName(event.target.value)} />
+            </label>
+            <label className="block space-y-1.5 text-sm font-medium">
+              E-mail <span className="text-xs font-normal text-muted-foreground">(somente leitura)</span>
+              <Input type="email" value={editEmail} disabled />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingUser(null)}>Cancelar</Button>
+            <Button onClick={() => void handleEditUser()} disabled={actionSaving || !editName.trim()}>
+              {actionSaving ? 'Salvando...' : 'Salvar alterações'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deletingUser)} onOpenChange={(open) => !open && setDeletingUser(null)}>
+        <DialogContent className="bg-white sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Excluir usuário</DialogTitle>
+            <DialogDescription>Confirma a exclusão de {deletingUser?.name}? Esta ação não pode ser desfeita.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)}>Cancelar</Button>
+            <Button onClick={() => void handleDeleteUser()} disabled={actionSaving} className="bg-red-600 text-white hover:bg-red-700">
+              {actionSaving ? 'Excluindo...' : 'Excluir'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppShell>
