@@ -81,27 +81,47 @@ export function getRedirectPathByRole(role?: UserRole | string | null): string {
  * Determines whether a pathname is accessible for a given role.
  *
  * Rules (in evaluation order):
- * 1. No role cookie → allow through (middleware hasn't set it yet, backend will enforce).
- * 2. ADMIN → unrestricted.
- * 3. /admin/* → ADMIN-only; any other role is denied.
- * 4. /manager/* → MANAGER only.
- * 5. Coordinator routes → COORDINATOR only.
- * 6. Anything else (e.g. shared utilities) → allow.
+ * 1. No role cookie → deny protected navigation.
+ * 2. ADMIN → the five admin areas plus every manager/coordinator workflow.
+ * 3. /admin/* → ADMIN-only; legacy admin pages remain unavailable.
+ * 4. /manager/* → MANAGER-only, except that ADMIN may also operate it.
+ * 5. Coordinator routes → COORDINATOR-only, except for ADMIN.
+ * 6. Anything else (for example, shared utilities) → allow.
  *
  * Note: Portuguese aliases (COORDENADOR, GESTOR) are accepted because the backend
  * may return either form depending on the API version.
  */
 export function isRouteAllowedForRole(pathname: string, role?: UserRole | string | null): boolean {
-  if (!role) return true;
+  if (!role) return false;
 
   const normalizedRole = role.toUpperCase();
 
   // ADMIN can access everything
   if (normalizedRole === "ADMIN") {
+    if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+      return (
+        pathname === "/admin" ||
+        pathname === "/admin/users" ||
+        pathname.startsWith("/admin/users/") ||
+        pathname === "/admin/locations" ||
+        pathname.startsWith("/admin/locations/") ||
+        pathname === "/admin/courses" ||
+        pathname.startsWith("/admin/courses/") ||
+        pathname === "/admin/vacancies" ||
+        pathname.startsWith("/admin/vacancies/")
+      );
+    }
+
+    // Administrators can also operate every manager and coordinator workflow.
     return true;
   }
 
   if (pathname.startsWith("/admin")) {
+    return false;
+  }
+
+  // Locais são mantidos exclusivamente pelo administrador.
+  if (pathname === "/manager/locations" || pathname.startsWith("/manager/locations/")) {
     return false;
   }
 

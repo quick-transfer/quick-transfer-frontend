@@ -213,7 +213,7 @@ export default function NovaTurmaPage() {
 
           <div className="flex justify-end gap-3">
             <Link
-              href="/admin/classes"
+              href="/classes"
               className={buttonVariants({ variant: "outline" })}
             >
               Cancelar

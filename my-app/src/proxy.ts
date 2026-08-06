@@ -43,6 +43,13 @@ export function proxy(request: NextRequest) {
 
   // /login must stay accessible so users with expired sessions can re-authenticate.
   if (isLoginPage) {
+    if (hasFreshToken) {
+      const landingPath = getRedirectPathByRole(userRole);
+      if (landingPath !== "/login") {
+        return NextResponse.redirect(new URL(landingPath, request.url));
+      }
+    }
+
     const response = NextResponse.next();
     if (authToken && !hasFreshToken) {
       response.cookies.delete(AUTH_COOKIE_NAME);
@@ -55,7 +62,15 @@ export function proxy(request: NextRequest) {
     return redirectToLogin(request);
   }
 
-  // RBAC validation
+  if (pathname === "/") {
+    const landingPath = getRedirectPathByRole(userRole);
+    return landingPath === "/login"
+      ? redirectToLogin(request)
+      : NextResponse.redirect(new URL(landingPath, request.url));
+  }
+
+  // RBAC: if the user tries to reach a route their role doesn't permit,
+  // redirect them to their own landing page rather than showing a 403.
   if (!isRouteAllowedForRole(pathname, userRole)) {
     const allowedPath = getRedirectPathByRole(userRole);
 

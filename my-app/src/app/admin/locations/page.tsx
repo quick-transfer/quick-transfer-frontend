@@ -30,7 +30,7 @@ const initialForm: PlaceInput = {
   section: "IT",
 };
 
-export default function ManagerLocationsPage() {
+export default function AdminLocationsPage() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -224,7 +224,7 @@ export default function ManagerLocationsPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Gestor", href: "/manager/vacancies" },
+        { label: "Admin", href: "/admin" },
         { label: "Locais" },
       ]}
     >
