@@ -13,21 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// Hardcoded pending API integration — these should eventually come from
-// getVacancies() filtered to status === "OPEN" for the current manager's section.
-const openVacancies = [
-  { id: "vac-1", title: "Montador de Painéis Elétricos" },
-  { id: "vac-2", title: "Técnico de Automação Jr" },
-];
-
 interface InterviewSchedulingModalProps {
   isOpen: boolean;
   onClose: () => void;
   candidateName: string;
   // When provided, the vacancy is pre-selected and the dropdown is replaced with
   // a read-only display — used when opening the modal from a vacancy's student list.
-  vacancyTitle?: string;
-  onConfirm: (data: { date: string; time: string; notes: string; vacancyId: string }) => void;
+  vacancyTitle: string;
+  vacancyId: string;
+  onConfirm: (data: { date: string; time: string; vacancyId: string }) => void | Promise<void>;
 }
 
 export function InterviewSchedulingModal({
@@ -35,13 +29,13 @@ export function InterviewSchedulingModal({
   onClose,
   candidateName,
   vacancyTitle,
+  vacancyId,
   onConfirm,
 }: InterviewSchedulingModalProps) {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
-  const [notes, setNotes] = useState("");
-  const [selectedVacancyId, setSelectedVacancyId] = useState(openVacancies[0]?.id ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   // "sv-SE" locale produces YYYY-MM-DD, which is the format <input type="date"> requires.
   const today = new Date();
@@ -53,25 +47,29 @@ export function InterviewSchedulingModal({
   maxDate.setFullYear(today.getFullYear() + 1);
   const maxDateStr = maxDate.toLocaleDateString("sv-SE");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // String comparison works here because both dates are YYYY-MM-DD — ISO 8601
     // lexicographic order equals chronological order.
     if (date < todayStr || date > maxDateStr) {
-      alert("Selecione uma data entre hoje e no máximo 1 ano a partir de hoje.");
+      setError("Selecione uma data entre hoje e no máximo 1 ano a partir de hoje.");
       return;
     }
 
     setIsSubmitting(true);
 
-    // TODO: Replace setTimeout with a real createInterview() + sendInterviewEmail()
-    // call once the coordinator notification endpoint is ready.
-    setTimeout(() => {
-      onConfirm({ date, time, notes, vacancyId: selectedVacancyId });
-      setIsSubmitting(false);
+    try {
+      await onConfirm({ date, time, vacancyId });
+      setDate("");
+      setTime("");
+      setError("");
       onClose();
-    }, 600);
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Não foi possível agendar a entrevista.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -82,34 +80,24 @@ export function InterviewSchedulingModal({
             Agendar Entrevista
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500">
-            Agende uma entrevista com <strong className="text-slate-800">{candidateName}</strong>. O coordenador responsável será notificado por e-mail.
+            Agende uma entrevista com <strong className="text-slate-800">{candidateName}</strong>.
           </DialogDescription>
         </DialogHeader>
 
+        {error && (
+          <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Seleção de Vaga em Aberto */}
           <div className="space-y-1.5">
             <Label htmlFor="interview-vacancy" className="text-xs font-semibold text-slate-700">
               Vaga em Aberto
             </Label>
-            {vacancyTitle ? (
-              // Read-only display when the vacancy context is already known.
-              <div className="h-10 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 font-medium">
-                {vacancyTitle}
-              </div>
-            ) : (
-              <select
-                id="interview-vacancy"
-                value={selectedVacancyId}
-                onChange={(e) => setSelectedVacancyId(e.target.value)}
-                required
-                className="h-10 w-full px-3 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {openVacancies.map((v) => (
-                  <option key={v.id} value={v.id}>{v.title}</option>
-                ))}
-              </select>
-            )}
+            <div className="h-10 px-3 flex items-center bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700 font-medium">
+              {vacancyTitle}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -150,23 +138,6 @@ export function InterviewSchedulingModal({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label
-              htmlFor="interview-notes"
-              className="text-xs font-semibold text-slate-700"
-            >
-              Observações / Pauta
-            </Label>
-            <textarea
-              id="interview-notes"
-              rows={3}
-              placeholder="Adicione informações adicionais para o coordenador ou candidato..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full p-2.5 bg-white border border-slate-200 rounded-md text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
           <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button
               type="button"
@@ -183,7 +154,7 @@ export function InterviewSchedulingModal({
             >
               {isSubmitting
                 ? "Agendando..."
-                : "Confirmar e Notificar Coordenador"}
+                : "Confirmar agendamento"}
             </Button>
           </DialogFooter>
         </form>
