@@ -105,6 +105,19 @@ export interface StudentResponse {
   performanceGrade?: number;
 }
 
+export interface StudentUpdatePayload {
+  name?: string;
+  email?: string;
+  age?: number;
+  averageGrade?: number;
+  classId?: string;
+  statusStudentInterview?: string;
+  hasSeenEmail?: boolean;
+  statusStudent?: "ENROLLED" | "FIRED" | "LEFT";
+  registration?: string;
+  attendanceRate?: number;
+}
+
 export interface VacancyResponse {
   id: string;
   name: string;
@@ -244,7 +257,7 @@ export function getStudent(id: string) {
 
 export function updateStudent(
   id: string,
-  input: Partial<Pick<StudentResponse, "name" | "email" | "registration" | "attendanceRate">>,
+  input: StudentUpdatePayload,
 ) {
   return apiFetch<StudentResponse>(`/student/update/${encodeURIComponent(id)}`, {
     method: "PATCH",
