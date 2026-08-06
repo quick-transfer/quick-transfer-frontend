@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/dialog";
 import { mockVacancies } from "@/lib/mock-data";
 import type { VacancyDTO } from "@/types";
-import { ToastCard } from "@/components/ui/toast-card";
-import { Briefcase, Edit, Trash2, Plus } from "lucide-react";
+import { Edit, Trash2, Plus } from "lucide-react";
+import { deleteAdminVacancy, getAdminVacancies, updateAdminVacancy } from '@/lib/application-api';
 
 export default function VagasPage() {
   const [vacancies, setVacancies] = useState<VacancyDTO[]>(mockVacancies);
@@ -27,7 +27,14 @@ export default function VagasPage() {
   const [deletingVacancy, setDeletingVacancy] = useState<VacancyDTO | null>(null);
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
-  const [toastVariant, setToastVariant] = useState<"success" | "destructive">("success");
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    getAdminVacancies().then(setVacancies).catch((loadError) => {
+      setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar as vagas.');
+    });
+  }, []);
 
   // Form state para edição / criação
   const [formTitle, setFormTitle] = useState("");
@@ -46,67 +53,62 @@ export default function VagasPage() {
     setIsEditOpen(true);
   };
 
-  const openNew = () => {
-    setFormTitle("");
-    setFormDepartment("");
-    setFormLocation("");
-    setFormTotalSpots(1);
-    setFormStatus("OPEN");
-    setIsNewOpen(true);
-  };
-
   const openDelete = (vac: VacancyDTO) => {
     setDeletingVacancy(vac);
     setIsDeleteOpen(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!editingVacancy || !formTitle.trim() || !formDepartment.trim() || !formLocation.trim()) return;
-    setVacancies((prev) =>
-      prev.map((v) =>
-        v.id === editingVacancy.id
-          ? {
-              ...v,
-              title: formTitle.trim(),
-              department: formDepartment.trim(),
-              location: formLocation.trim(),
-              totalSpots: formTotalSpots,
-              status: formStatus,
-            }
-          : v
-      )
-    );
-    setIsEditOpen(false);
-    setToastVariant("success");
-    setSuccessMsg("Vaga atualizada com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 7000);
+  const handleSaveEdit = async () => {
+    if (!editingVacancy) return;
+    setSaving(true);
+    setError('');
+    try {
+      const saved = await updateAdminVacancy({
+        ...editingVacancy, title: formTitle.trim(), department: formDepartment.trim(),
+        location: formLocation.trim(), totalSpots: formTotalSpots, status: formStatus,
+      });
+      setVacancies((prev) => prev.map((item) => item.id === saved.id ? saved : item));
+      setIsEditOpen(false);
+      setSuccessMsg('Vaga atualizada com sucesso!');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível atualizar a vaga.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCreate = () => {
-    if (!formTitle.trim() || !formDepartment.trim() || !formLocation.trim()) return;
+    if (!formTitle.trim()) return;
     const newVac: VacancyDTO = {
       id: `vac-${Date.now()}`,
-      title: formTitle.trim(),
-      department: formDepartment.trim(),
-      location: formLocation.trim(),
+      title: formTitle,
+      department: formDepartment,
+      location: formLocation,
       totalSpots: formTotalSpots,
       filledSpots: 0,
       status: formStatus,
     };
     setVacancies((prev) => [...prev, newVac]);
     setIsNewOpen(false);
-    setToastVariant("success");
     setSuccessMsg("Vaga criada com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 7000);
+    setTimeout(() => setSuccessMsg(""), 4000);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!deletingVacancy) return;
+    setSaving(true);
+    setError('');
+    try {
+      await deleteAdminVacancy(deletingVacancy.id);
     setVacancies((prev) => prev.filter((v) => v.id !== deletingVacancy.id));
     setIsDeleteOpen(false);
-    setToastVariant("destructive");
     setSuccessMsg(`Vaga "${deletingVacancy.title}" excluída com sucesso.`);
-    setTimeout(() => setSuccessMsg(""), 7000);
+    setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível excluir a vaga.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const columns: DataTableColumn<VacancyDTO>[] = [
@@ -195,108 +197,27 @@ export default function VagasPage() {
         <PageHeader
           title="Gerenciar Vagas"
           description="Abertura e controle de vagas para estagiários e aprendizes nas unidades"
+          actions={
+            <Button
+              className="gap-2 bg-primary text-white hover:bg-primary-700"
+              // The manager form provides all fields required by the API.
+              onClick={() => window.location.assign(`/manager/vacancies/new`)}
+            >
+              <Plus className="size-4" /> Nova Vaga
+            </Button>
+          }
         />
 
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Lado Esquerdo - Tabela de Vagas */}
-          <div className="lg:col-span-2 space-y-4">
-            <DataTable
-              columns={columns}
-              data={vacancies}
-              pageSize={10}
-              searchable
-              searchPlaceholder="Buscar por título ou departamento..."
-              searchKeys={["title", "department", "location"]}
-              getRowKey={(row) => row.id}
-            />
-          </div>
-
-          {/* Lado Direito - Criar Nova Vaga */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
-            <div>
-              <h2 className="text-xl font-bold text-slate-900">Nova Vaga</h2>
-              <p className="text-xs text-slate-500">Preencha as informações para abrir uma nova vaga no sistema.</p>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreate();
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Título da Vaga <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                  placeholder="Ex: Aprendiz de Montagem Elétrica"
-                  className="h-10 border-slate-200 text-sm"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Departamento <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    value={formDepartment}
-                    onChange={(e) => setFormDepartment(e.target.value)}
-                    placeholder="Ex: Produção"
-                    className="h-10 border-slate-200 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Localização <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    value={formLocation}
-                    onChange={(e) => setFormLocation(e.target.value)}
-                    placeholder="Ex: Unidade Fabril 1"
-                    className="h-10 border-slate-200 text-sm"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Total de Vagas</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={formTotalSpots}
-                    onChange={(e) => setFormTotalSpots(Number(e.target.value))}
-                    className="h-10 border-slate-200 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Status</label>
-                  <select
-                    value={formStatus}
-                    onChange={(e) => setFormStatus(e.target.value as "OPEN" | "CLOSED" | "URGENT")}
-                    className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    <option value="OPEN">Aberta</option>
-                    <option value="URGENT">Urgente</option>
-                    <option value="CLOSED">Fechada</option>
-                  </select>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={!formTitle.trim() || !formDepartment.trim() || !formLocation.trim()}
-                className="w-full bg-primary-900 text-white hover:bg-primary-950 gap-2 h-10"
-              >
-                <Plus className="size-4" /> Criar Vaga
-              </Button>
-            </form>
-          </div>
-        </div>
+        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
+        <DataTable
+          columns={columns}
+          data={vacancies}
+          pageSize={10}
+          searchable
+          searchPlaceholder="Buscar por título ou departamento..."
+          searchKeys={["title", "department", "location"]}
+          getRowKey={(row) => row.id}
+        />
       </div>
 
       {/* Modal Edição */}
@@ -344,7 +265,57 @@ export default function VagasPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit} disabled={!formTitle.trim() || !formDepartment.trim() || !formLocation.trim()} className="bg-primary-900 text-white hover:bg-primary-950">Salvar Alterações</Button>
+            <Button onClick={() => void handleSaveEdit()} disabled={saving} className="bg-primary-900 text-white hover:bg-primary-950">{saving ? 'Salvando...' : 'Salvar Alterações'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Nova Vaga */}
+      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900">Nova Vaga</DialogTitle>
+            <DialogDescription className="text-xs text-slate-500">
+              Preencha as informações para abrir uma nova vaga no sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1.5">Título da Vaga <span className="text-red-500">*</span></label>
+              <Input value={formTitle} onChange={(e) => setFormTitle(e.target.value)} placeholder="Ex: Aprendiz de Montagem Elétrica" className="h-10 border-slate-200" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Departamento</label>
+                <Input value={formDepartment} onChange={(e) => setFormDepartment(e.target.value)} placeholder="Ex: Produção" className="h-10 border-slate-200" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Localização</label>
+                <Input value={formLocation} onChange={(e) => setFormLocation(e.target.value)} placeholder="Ex: Unidade Fabril 1" className="h-10 border-slate-200" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Total de Vagas</label>
+                <Input type="number" min={1} value={formTotalSpots} onChange={(e) => setFormTotalSpots(Number(e.target.value))} className="h-10 border-slate-200" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+                <select
+                  value={formStatus}
+                  onChange={(e) => setFormStatus(e.target.value as "OPEN" | "CLOSED" | "URGENT")}
+                  className="h-10 w-full px-3 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="OPEN">Aberta</option>
+                  <option value="URGENT">Urgente</option>
+                  <option value="CLOSED">Fechada</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={!formTitle.trim()} className="bg-primary-900 text-white hover:bg-primary-950">Criar Vaga</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -361,7 +332,8 @@ export default function VagasPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
             <Button
-              onClick={handleConfirmDelete}
+              onClick={() => void handleConfirmDelete()}
+              disabled={saving}
               className="bg-red-600 text-white hover:bg-red-700"
             >
               Excluir
@@ -371,7 +343,11 @@ export default function VagasPage() {
       </Dialog>
 
       {/* Toast de sucesso */}
-      <ToastCard message={successMsg} variant={toastVariant} />
+      {successMsg && (
+        <div className="fixed top-20 right-6 z-50 max-w-sm p-4 bg-emerald-800 text-white rounded-lg shadow-xl text-sm font-medium">
+          {successMsg}
+        </div>
+      )}
     </AppShell>
   );
 }

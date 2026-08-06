@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,11 +13,11 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { mockStudents, mockVacancies } from "@/lib/mock-data";
 import type { StudentDTO, VacancyDTO } from "@/types";
-import { ToastCard } from "@/components/ui/toast-card";
 import { Users, Briefcase, Search, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { directStudentToVacancy, getAppStudents } from '@/lib/application-api';
+import { getVacancies } from '@/lib/manager-api';
 
 type Step = "select-vacancy" | "select-student";
 
@@ -26,13 +26,30 @@ export default function CoordinatorDirectPage() {
   const [searchVacancy, setSearchVacancy] = useState("");
   const [searchStudent, setSearchStudent] = useState("");
   const [selectedVacancy, setSelectedVacancy] = useState<VacancyDTO | null>(null);
-  const [directedStudentIds, setDirectedStudentIds] = useState<string[]>([]);
+  const [directedStudentId, setDirectedStudentId] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [pendingStudent, setPendingStudent] = useState<StudentDTO | null>(null);
   const [successMsg, setSuccessMsg] = useState("");
+  const [vacancies, setVacancies] = useState<VacancyDTO[]>([]);
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-  const openVacancies = mockVacancies.filter((v) => v.status === "OPEN" || v.status === "URGENT");
-  const availableStudents = mockStudents.filter((s) => s.status === "ACTIVE" || s.status === "TRANSFERRING");
+  useEffect(() => {
+    Promise.all([getVacancies(), getAppStudents()])
+      .then(([vacancyData, studentData]) => {
+        setVacancies(vacancyData.map((item) => ({
+          id: item.id, title: item.name, department: item.section,
+          location: item.park, totalSpots: item.numbersVacancies,
+          filledSpots: 0, status: 'OPEN',
+        })));
+        setStudents(studentData);
+      })
+      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os dados.'));
+  }, []);
+
+  const openVacancies = vacancies.filter((v) => v.status === "OPEN" || v.status === "URGENT");
+  const availableStudents = students.filter((s) => s.status === "ACTIVE");
 
   const filteredVacancies = openVacancies.filter(
     (v) =>
@@ -56,14 +73,24 @@ export default function CoordinatorDirectPage() {
     setIsConfirmOpen(true);
   };
 
-  const handleConfirmDirection = () => {
-    if (!pendingStudent) return;
-    setDirectedStudentIds((prev) => [...prev, pendingStudent.id]);
-    setIsConfirmOpen(false);
-    setSuccessMsg(
-      `Aluno ${pendingStudent.name} direcionado com sucesso!`
-    );
-    setTimeout(() => setSuccessMsg(""), 7000);
+  const handleConfirmDirection = async () => {
+    if (!pendingStudent || !selectedVacancy) return;
+    setSaving(true);
+    setError('');
+    try {
+      await directStudentToVacancy(pendingStudent.id, selectedVacancy.id);
+      setDirectedStudentId(pendingStudent.id);
+      setIsConfirmOpen(false);
+      setSuccessMsg(
+        `${pendingStudent.name} foi associado(a) à vaga "${selectedVacancy.title}" com sucesso.`
+      );
+      setTimeout(() => setSuccessMsg(""), 6000);
+    } catch (saveError) {
+      setIsConfirmOpen(false);
+      setError(saveError instanceof Error ? saveError.message : 'Não foi possível direcionar o aluno.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -78,6 +105,8 @@ export default function CoordinatorDirectPage() {
           title="Direcionar Alunos para Vagas"
           description="Visualize as vagas em aberto e direcione alunos disponíveis para as oportunidades de aprendizagem"
         />
+
+        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
         {/* Indicador de Steps */}
         <div className="flex items-center gap-4">
@@ -166,7 +195,7 @@ export default function CoordinatorDirectPage() {
                 variant="ghost"
                 size="sm"
                 className="gap-1 text-primary-700 hover:text-primary-900"
-                onClick={() => { setStep("select-vacancy"); setDirectedStudentIds([]); }}
+                onClick={() => { setStep("select-vacancy"); setDirectedStudentId(null); }}
               >
                 <ArrowLeft className="size-3.5" /> Trocar vaga
               </Button>
@@ -185,7 +214,7 @@ export default function CoordinatorDirectPage() {
             <div className="space-y-3">
               {filteredStudents.map((student) => {
                 const initials = student.name.split(" ").map((n) => n[0]).slice(0, 2).join("");
-                const isDirected = directedStudentIds.includes(student.id);
+                const isDirected = directedStudentId === student.id;
 
                 return (
                   <div
@@ -206,8 +235,12 @@ export default function CoordinatorDirectPage() {
 
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right hidden sm:block">
-                        <p className="text-xs font-semibold text-slate-700">Frequência: {student.attendanceRate}%</p>
-                        <p className="text-xs text-slate-500">Nota: {student.performanceGrade}</p>
+                        <p className="text-xs font-semibold text-slate-700">
+                          Frequência: {student.attendanceRate == null ? "Não informada" : `${student.attendanceRate}%`}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Nota: {student.performanceGrade == null ? "Não informada" : student.performanceGrade}
+                        </p>
                       </div>
                       {isDirected ? (
                         <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-3 py-1.5 rounded-full">
@@ -238,20 +271,24 @@ export default function CoordinatorDirectPage() {
             <DialogTitle className="text-lg font-bold text-slate-900">Confirmar Direcionamento</DialogTitle>
             <DialogDescription className="text-sm text-slate-600">
               Deseja direcionar <strong className="text-slate-800">{pendingStudent?.name}</strong> para a vaga{" "}
-              <strong className="text-slate-800">{selectedVacancy?.title}</strong>? O gestor responsável será notificado.
+              <strong className="text-slate-800">{selectedVacancy?.title}</strong>? A operação somente será concluída se a API persistir o vínculo.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>Cancelar</Button>
-            <Button onClick={handleConfirmDirection} className="bg-primary-900 text-white hover:bg-primary-950">
-              Confirmar Direcionamento
+            <Button onClick={() => void handleConfirmDirection()} disabled={saving} className="bg-primary-900 text-white hover:bg-primary-950">
+              {saving ? 'Direcionando...' : 'Confirmar Direcionamento'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Toast de sucesso */}
-      <ToastCard message={successMsg} variant="success" />
+      {successMsg && (
+        <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium">
+          {successMsg}
+        </div>
+      )}
     </AppShell>
   );
 }
