@@ -7,16 +7,9 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
-  AUTH_COOKIE_NAME,
   getRedirectPathByRole,
   ROLE_COOKIE_NAME,
 } from "@/lib/auth";
-import {
-  authenticateMockUser,
-  createMockSessionToken,
-  IS_MOCK_AUTH_ENABLED,
-  MOCK_AUTH_CREDENTIALS,
-} from "@/lib/mock-auth";
 import { UserRole } from "@/types";
 
 type AuthenticatedUser = {
@@ -79,21 +72,11 @@ export default function Login() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
 
-  const finishLogin = (
-    authenticatedUser: AuthenticatedUser,
-    mockSessionToken?: string
-  ) => {
+  const finishLogin = (authenticatedUser: AuthenticatedUser) => {
     const secure = window.location.protocol === "https:" ? "; secure" : "";
     // Role cookie must be JS-readable (no HttpOnly) so client components can
     // read it to render role-specific UI without a server round-trip.
     document.cookie = `${ROLE_COOKIE_NAME}=${encodeURIComponent(authenticatedUser.role)}; path=/; max-age=86400; samesite=strict${secure}`;
-
-    // In a real login the backend sets the HttpOnly JWT cookie itself in the
-    // Set-Cookie response header. Only the mock path needs to set it client-side.
-    if (mockSessionToken) {
-      // 8h (28800s) matches the mock token TTL set in createMockSessionToken.
-      document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(mockSessionToken)}; path=/; max-age=28800; samesite=strict${secure}`;
-    }
 
     // router.replace keeps the login page out of browser history so the back
     // button doesn't return users to the login form after signing in.
@@ -116,20 +99,6 @@ export default function Login() {
 
   const handleLogin = async () => {
     const username = usuario.trim();
-
-    // The mock username is checked first to skip the API entirely — avoids
-    // waiting for a timeout when the backend is down during development.
-    if (IS_MOCK_AUTH_ENABLED && username === MOCK_AUTH_CREDENTIALS.username) {
-      const mockUser = authenticateMockUser(username, senha);
-
-      if (!mockUser) {
-        setErro("Senha do usuário de contingência inválida.");
-        return;
-      }
-
-      finishLogin(mockUser, createMockSessionToken(mockUser));
-      return;
-    }
 
     try {
       await authenticate(username, senha);
@@ -253,23 +222,6 @@ export default function Login() {
               }`}
             >
               {erro}
-            </div>
-          )}
-
-          {/* Mock auth hint — only shown in non-production environments where
-              IS_MOCK_AUTH_ENABLED is true, to guide developers. */}
-          {IS_MOCK_AUTH_ENABLED && !primeiroAcesso && (
-            <div className="mb-4 rounded-lg border border-status-warning-foreground/20 bg-status-warning p-3 text-sm text-status-warning-foreground">
-              <p className="font-semibold">Acesso de contingência</p>
-              <p>
-                Usuário: <code>{MOCK_AUTH_CREDENTIALS.username}</code>
-              </p>
-              <p>
-                Senha: <code>{MOCK_AUTH_CREDENTIALS.password}</code>
-              </p>
-              <p className="mt-1 text-xs">
-                Permite navegar como administrador sem consultar a API.
-              </p>
             </div>
           )}
 
