@@ -1,152 +1,67 @@
 "use client";
 
-import { useState } from "react";
-import { AppShell } from "@/components/layout";
-import { Input } from "@/components/ui/input";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AppShell, PageHeader } from "@/components/layout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { createVacancy, getPlaces, type PlaceResponse } from "@/lib/core-api";
+import { getManager } from "@/lib/manager-api";
+import { getCurrentUser } from "@/lib/selection-api";
 
 export default function NovaVagaPage() {
   const router = useRouter();
-
-  const [jobTitle, setJobTitle] = useState("");
-  const [department, setDepartment] = useState("Produção");
+  const [places, setPlaces] = useState<PlaceResponse[]>([]);
+  const [name, setName] = useState("");
+  const [area, setArea] = useState("IT");
   const [description, setDescription] = useState("");
-  const [spots, setSpots] = useState(1);
-  const [successMsg, setSuccessMsg] = useState("");
+  const [numbersVacancies, setNumbersVacancies] = useState(1);
+  const [shift, setShift] = useState("FIRST");
+  const [placeId, setPlaceId] = useState("");
+  const [status, setStatus] = useState<"OPEN" | "URGENT">("OPEN");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleCreate = () => {
-    if (!jobTitle.trim()) {
-      setSuccessMsg("Preencha o nome da vaga antes de continuar.");
-      setTimeout(() => setSuccessMsg(""), 4000);
-      return;
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([getPlaces({ size: 200, sort: "placeName,asc" }), getCurrentUser()])
+      .then(async ([response, user]) => {
+        if (!mounted) return;
+        const manager = await getManager(user.id);
+        if (!mounted) return;
+        const active = response.filter((place) =>
+          place.status === "ACTIVE" && place.section === manager.section,
+        );
+        setPlaces(active);
+        setPlaceId(active[0]?.id ?? "");
+      })
+      .catch((requestError) => mounted && setError(
+        requestError instanceof Error ? requestError.message : "Não foi possível carregar os locais.",
+      ));
+    return () => { mounted = false; };
+  }, []);
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await createVacancy({ name, description, numbersVacancies, area, shift, placeId, status, skillIds: [] });
+      router.replace("/manager/vacancies");
+      router.refresh();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Não foi possível criar a vaga.");
+      setSaving(false);
     }
-    setSuccessMsg("Vaga criada com sucesso!");
-    setTimeout(() => {
-      setSuccessMsg("");
-      router.push("/manager/vacancies");
-    }, 1800);
   };
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Gestor", href: "/manager/vacancies" },
-        { label: "Minhas Vagas", href: "/manager/vacancies" },
-        { label: "Nova Vaga" },
-      ]}
-    >
-      <div className="space-y-6 pb-12">
-        {/* Cabeçalho */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Criar Nova Vaga</h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Preencha os campos abaixo para disponibilizar uma nova vaga para os alunos
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/manager/vacancies")}
-              className="px-4 py-2 text-sm font-semibold text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="button"
-              onClick={handleCreate}
-              className="px-5 py-2 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 rounded-lg shadow-sm transition"
-            >
-              Criar Vaga
-            </button>
-          </div>
-        </div>
-
-        {/* Formulário */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-5">
-          <h2 className="text-lg font-bold text-slate-900">Informações Básicas</h2>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Nome da Vaga <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                placeholder="Ex: Aprendiz de Montagem Elétrica"
-                className="h-10 bg-white border-slate-200 rounded-lg text-sm font-medium"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Setor / Departamento
-              </label>
-              <select
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                className="h-10 w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                <option value="Produção">Produção</option>
-                <option value="Manutenção">Manutenção</option>
-                <option value="Qualidade">Qualidade</option>
-                <option value="Tecnologia da Informação">Tecnologia da Informação</option>
-                <option value="Logística">Logística</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Descrição da Vaga
-            </label>
-            <textarea
-              rows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Descreva as responsabilidades, atividades e perfil desejado do candidato..."
-              className="w-full p-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
-            />
-          </div>
-
-          <div className="w-40">
-            <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-              Número de Vagas
-            </label>
-            <Input
-              type="number"
-              min={1}
-              max={50}
-              value={spots}
-              onChange={(e) => setSpots(Number(e.target.value))}
-              className="h-10 bg-white border-slate-200 rounded-lg text-sm font-medium"
-            />
-          </div>
-        </div>
-
-        {/* Requisitos */}
-        <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-900">Requisitos</h2>
-            <button
-              type="button"
-              className="text-xs font-semibold text-primary-800 hover:text-primary-950 flex items-center gap-1 transition"
-            >
-              + Adicionar Requisito
-            </button>
-          </div>
-          <p className="text-xs text-slate-500">
-            Nenhum requisito adicionado ainda. Clique em &quot;+ Adicionar Requisito&quot; para definir as competências e habilidades necessárias para a vaga.
-          </p>
-        </div>
-      </div>
-
-      {/* Notificação */}
-      {successMsg && (
-        <div className="fixed top-20 right-6 z-50 max-w-md p-4 bg-emerald-800 text-white rounded-lg shadow-xl border border-emerald-700 text-sm font-medium">
-          {successMsg}
-        </div>
-      )}
+    <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Minhas vagas", href: "/manager/vacancies" }, { label: "Nova vaga" }]}>
+      <form onSubmit={submit} className="space-y-6 pb-12">
+        <PageHeader title="Criar Nova Vaga" description="Disponibilize uma oportunidade para encaminhamento de alunos" actions={<div className="flex gap-2"><Button type="button" variant="outline" onClick={() => router.push("/manager/vacancies")}>Cancelar</Button><Button type="submit" disabled={saving || !placeId}>{saving ? "Criando..." : "Criar vaga"}</Button></div>} />
+        {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        <section className="space-y-5 rounded-xl border bg-white p-6 shadow-sm"><h2 className="text-lg font-bold">Informações básicas</h2><div className="grid gap-4 sm:grid-cols-2"><label className="space-y-1.5 text-xs font-semibold">Nome da vaga<Input required value={name} onChange={(event) => setName(event.target.value)} /></label><label className="space-y-1.5 text-xs font-semibold">Área<select required className="h-10 w-full rounded-md border px-3 text-sm" value={area} onChange={(event) => setArea(event.target.value)}><option value="IT">Tecnologia da Informação</option><option value="MAINTENANCE">Manutenção</option><option value="TOOLING">Ferramentaria</option><option value="CHEMISTRY">Química</option></select></label><label className="space-y-1.5 text-xs font-semibold">Local<select required className="h-10 w-full rounded-md border px-3 text-sm" value={placeId} onChange={(event) => setPlaceId(event.target.value)}><option value="">Selecione</option>{places.map((place) => <option key={place.id} value={place.id}>{place.placeName} · {place.section}</option>)}</select></label><label className="space-y-1.5 text-xs font-semibold">Turno<select required className="h-10 w-full rounded-md border px-3 text-sm" value={shift} onChange={(event) => setShift(event.target.value)}><option value="FIRST">Primeiro turno</option><option value="SECOND">Segundo turno</option><option value="THIRD">Terceiro turno</option><option value="FLEXIBLE_SHIFT">Flexível</option></select></label><label className="space-y-1.5 text-xs font-semibold">Número de vagas<Input required type="number" min={1} max={50} value={numbersVacancies} onChange={(event) => setNumbersVacancies(Number(event.target.value))} /></label><label className="space-y-1.5 text-xs font-semibold">Prioridade<select className="h-10 w-full rounded-md border px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value as "OPEN" | "URGENT")}><option value="OPEN">Normal</option><option value="URGENT">Urgente</option></select></label></div><label className="block space-y-1.5 text-xs font-semibold">Descrição<textarea required rows={5} className="w-full rounded-md border p-3 text-sm" value={description} onChange={(event) => setDescription(event.target.value)} /></label></section>
+      </form>
     </AppShell>
   );
 }

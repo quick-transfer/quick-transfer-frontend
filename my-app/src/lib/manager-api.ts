@@ -324,6 +324,10 @@ export async function getManagers(query: PageQuery = {}) {
   return pageContent(await getManagersPage(query));
 }
 
+export function getManager(id: string) {
+  return apiFetch<Manager>(`/manager/find/id/${encodeURIComponent(id)}`);
+}
+
 /**
  * Creates a manager account. The backend restricts this endpoint to ADMIN sessions.
  */
