@@ -5,7 +5,6 @@ import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -22,17 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockUsers } from "@/lib/mock-data";
 import {
   createCoordinator,
   createManager,
-  getManagers,
   type Coordinator,
   type CoordinatorInput,
   type Manager,
   type ManagerInput,
   type ManagerSection,
 } from "@/lib/manager-api";
+import {
+  deleteUser,
+  getUsers,
+  updateUser,
+  type UserResponse,
+} from "@/lib/core-api";
 import type { UserDTO } from "@/types";
 import { UserPlus, Edit, Trash2 } from "lucide-react";
 
@@ -55,14 +58,13 @@ const initialUserForm: CreateUserForm = {
 const PASSWORD_REQUIREMENTS =
   "A senha deve ter no mínimo 14 caracteres, com letra maiúscula, minúscula, número e caractere especial.";
 
-// A API de gestores não devolve status de atividade, então novos gestores são exibidos como ativos.
 function managerToUser(manager: Manager): UserDTO {
   return {
     id: manager.id,
     name: manager.name,
     email: manager.email,
     role: "MANAGER",
-    active: true,
+    active: manager.active,
   };
 }
 
@@ -72,12 +74,22 @@ function coordinatorToUser(coordinator: Coordinator): UserDTO {
     name: coordinator.name,
     email: coordinator.email,
     role: "COORDINATOR",
-    active: true,
+    active: coordinator.active,
+  };
+}
+
+function responseToUser(user: UserResponse): UserDTO {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    active: user.active,
   };
 }
 
 export default function UsuariosPage() {
-  const [users, setUsers] = useState<UserDTO[]>(mockUsers);
+  const [users, setUsers] = useState<UserDTO[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateUserForm>(initialUserForm);
   const [saving, setSaving] = useState(false);
@@ -87,21 +99,17 @@ export default function UsuariosPage() {
   useEffect(() => {
     let active = true;
 
-    // Enquanto os demais perfis usam mocks, substituímos somente os gestores pelos dados reais da API.
-    getManagers()
-      .then((managers) => {
+    getUsers({ size: 200, sort: "name,asc" })
+      .then((responseUsers) => {
         if (!active) return;
-        setUsers([
-          ...mockUsers.filter((user) => user.role !== "MANAGER"),
-          ...managers.map(managerToUser),
-        ]);
+        setUsers(responseUsers.map(responseToUser));
       })
       .catch((requestError) => {
         if (!active) return;
         setError(
           requestError instanceof Error
             ? requestError.message
-            : "Não foi possível carregar os gestores.",
+            : "Não foi possível carregar os usuários.",
         );
       });
 
@@ -191,6 +199,43 @@ export default function UsuariosPage() {
     }
   };
 
+  const handleToggleUser = async (user: UserDTO) => {
+    setError("");
+    setNotice("");
+    try {
+      const updated = responseToUser(
+        await updateUser(user.id, { active: !user.active }),
+      );
+      setUsers((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setNotice(`Usuário ${updated.active ? "ativado" : "inativado"} com sucesso.`);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível alterar o status do usuário.",
+      );
+    }
+  };
+
+  const handleDeleteUser = async (user: UserDTO) => {
+    if (!window.confirm(`Excluir o usuário "${user.name}"?`)) return;
+    setError("");
+    setNotice("");
+    try {
+      await deleteUser(user.id);
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setNotice(`Usuário "${user.name}" excluído com sucesso.`);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : "Não foi possível excluir o usuário.",
+      );
+    }
+  };
+
   const columns: DataTableColumn<UserDTO>[] = [
     {
       key: "name",
@@ -236,9 +281,14 @@ export default function UsuariosPage() {
       key: "actions",
       header: "Ações",
       className: "text-right",
-      render: () => (
+      render: (user) => (
         <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" aria-label="Editar usuário">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={user.active ? "Inativar usuário" : "Ativar usuário"}
+            onClick={() => void handleToggleUser(user)}
+          >
             <Edit className="size-3.5" />
           </Button>
           <Button
@@ -246,6 +296,7 @@ export default function UsuariosPage() {
             size="icon-sm"
             className="text-destructive"
             aria-label="Excluir usuário"
+            onClick={() => void handleDeleteUser(user)}
           >
             <Trash2 className="size-3.5" />
           </Button>
