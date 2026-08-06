@@ -18,7 +18,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function ManagerStudentDetailsPage({ params }: PageProps) {
+export default function StudentDetailsPage({ params }: PageProps) {
   const { id } = use(params);
   const [student, setStudent] = useState<StudentDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,16 +47,16 @@ export default function ManagerStudentDetailsPage({ params }: PageProps) {
   }, [id]);
 
   if (loading) {
-    return <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Alunos", href: "/manager/students" }]}><p>Carregando aluno...</p></AppShell>;
+    return <AppShell breadcrumbs={[{ label: "Alunos", href: "/students" }]}><p>Carregando aluno...</p></AppShell>;
   }
 
   if (!student) {
     return (
-      <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Alunos", href: "/manager/students" }]}>
+      <AppShell breadcrumbs={[{ label: "Alunos", href: "/students" }]}>
         <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           {error || "Aluno não encontrado."}
         </div>
-        <Link href="/manager/students" className={cn(buttonVariants({ variant: "outline" }), "mt-4 gap-2")}>
+        <Link href="/students" className={cn(buttonVariants({ variant: "outline" }), "mt-4 gap-2")}>
           <ArrowLeft className="size-4" /> Voltar
         </Link>
       </AppShell>
@@ -66,13 +66,13 @@ export default function ManagerStudentDetailsPage({ params }: PageProps) {
   const initials = student.name.split(" ").map((part) => part[0]).slice(0, 2).join("");
 
   return (
-    <AppShell breadcrumbs={[{ label: "Gestor" }, { label: "Alunos", href: "/manager/students" }, { label: student.name }]}>
+    <AppShell breadcrumbs={[{ label: "Alunos", href: "/students" }, { label: student.name }]}>
       <div className="space-y-6">
         <PageHeader
           title={`Detalhes do Aluno: ${student.name}`}
           description={`Matrícula: ${student.registration}`}
           actions={
-            <Link href="/manager/students" className={cn(buttonVariants({ variant: "outline" }), "gap-2")}>
+            <Link href="/students" className={cn(buttonVariants({ variant: "outline" }), "gap-2")}>
               <ArrowLeft className="size-4" /> Voltar
             </Link>
           }
@@ -81,10 +81,14 @@ export default function ManagerStudentDetailsPage({ params }: PageProps) {
         <Card className="max-w-2xl border-border shadow-sm">
           <CardHeader className="text-center">
             <Avatar className="mx-auto size-24 border-2 border-primary">
-              <AvatarFallback className="bg-primary-800 text-2xl font-bold text-white">{initials}</AvatarFallback>
+              <AvatarFallback className="bg-primary-600 text-2xl font-bold text-white">{initials}</AvatarFallback>
             </Avatar>
             <CardTitle className="mt-4 text-xl">{student.name}</CardTitle>
-            <div><Badge variant="info">{student.status === "ACTIVE" ? "Ativo" : student.status === "COMPLETED" ? "Concluído" : "Pausado"}</Badge></div>
+            <div>
+              <Badge variant={student.status === "ACTIVE" ? "success" : student.status === "COMPLETED" ? "info" : "neutral"}>
+                {student.status === "ACTIVE" ? "Ativo" : student.status === "COMPLETED" ? "Concluído" : "Pausado"}
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground"><Mail className="size-4 text-primary" />{student.email}</div>
@@ -97,7 +101,7 @@ export default function ManagerStudentDetailsPage({ params }: PageProps) {
               {student.performanceGrade != null && <Progress value={student.performanceGrade * 10} className="h-2" />}
             </div>
             <p className="border-t pt-4 text-xs text-muted-foreground">
-              Habilidades, frequência e histórico não são retornados neste endpoint da API.
+              A API atual não fornece frequência nem histórico de ocorrências para o aluno.
             </p>
           </CardContent>
         </Card>

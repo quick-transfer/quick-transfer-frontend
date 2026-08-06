@@ -1,21 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
-import { mockStudents } from "@/lib/mock-data";
 import type { StudentDTO } from "@/types";
 import Link from "next/link";
-import { Eye, UserCheck } from "lucide-react";
+import { Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getStudents } from '@/lib/manager-api';
 
 export default function ManagerStudentsPage() {
-  const [assignedStudents, setAssignedStudents] = useState<Record<string, string>>({
-    "std-1": "Analista de Dados Sênior",
-  });
+  const [students, setStudents] = useState<StudentDTO[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    getStudents().then((data) => {
+      setStudents(data.map((student) => ({
+        id: student.id,
+        name: student.name,
+        registration: student.acronym,
+        email: student.email,
+        courseName: student.course,
+        className: student.course,
+        status: 'ACTIVE',
+        performanceGrade: student.averageGrade,
+      })));
+    }).catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os alunos.'));
+  }, []);
 
   const columns: DataTableColumn<StudentDTO>[] = [
     {
@@ -28,8 +42,6 @@ export default function ManagerStudentsPage() {
           .map((n) => n[0])
           .slice(0, 2)
           .join("");
-        const isAssigned = Boolean(assignedStudents[student.id]);
-
         return (
           <div className="flex items-center gap-3">
             <Avatar className="size-9 border border-slate-200">
@@ -41,11 +53,6 @@ export default function ManagerStudentsPage() {
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-bold text-slate-900">{student.name}</p>
-                {isAssigned && (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                    <UserCheck className="size-3" /> Na Vaga: {assignedStudents[student.id]}
-                  </span>
-                )}
               </div>
               <p className="text-xs text-slate-500">Matrícula: {student.registration}</p>
             </div>
@@ -64,27 +71,19 @@ export default function ManagerStudentsPage() {
       ),
     },
     {
-      key: "shift",
-      header: "Turno",
-      render: (student) => (
-        <span className="text-sm font-medium text-slate-700">{student.shift}</span>
-      ),
-    },
-    {
       key: "attendanceRate",
       header: "Frequência",
       sortable: true,
       render: (student) => (
-        <span className="text-sm font-bold text-slate-900">{student.attendanceRate}%</span>
+        <span className="text-sm font-bold text-slate-900">
+          {student.attendanceRate == null ? "Não informado" : `${student.attendanceRate}%`}
+        </span>
       ),
     },
     {
       key: "status",
       header: "Status",
       render: (student) => {
-        if (assignedStudents[student.id]) {
-          return <Badge variant="success">Alocado em Vaga</Badge>;
-        }
         if (student.status === "ACTIVE") return <Badge variant="info">Disponível</Badge>;
         return <Badge variant="warning">Em Análise</Badge>;
       },
@@ -112,10 +111,11 @@ export default function ManagerStudentsPage() {
           description="Pesquise e consulte o perfil técnico e a disponibilidade de alunos candidatos às vagas"
         />
 
+        {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
           <DataTable
             columns={columns}
-            data={mockStudents}
+            data={students}
             searchable
             searchPlaceholder="Pesquisar aluno por nome, matrícula ou curso..."
             searchKeys={["name", "registration", "courseName"]}
