@@ -1,140 +1,57 @@
 "use client";
 
-import { AppShell, PageHeader } from "@/components/layout";
-import { StatCard } from "@/components/shared/stat-card";
-import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { buttonVariants } from "@/components/ui/button";
-import { mockStudents, mockTransferRequests, mockVacancies } from "@/lib/mock-data";
-import type { VacancyDTO } from "@/types";
-import { Users, FileText, ArrowUpRight, Briefcase, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight, Briefcase, FileText, Plus, Users } from "lucide-react";
+import { AppShell, PageHeader } from "@/components/layout";
+import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
+import { StatCard } from "@/components/shared/stat-card";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { getStudents, getVacancies, type VacancyResponse } from "@/lib/core-api";
+import { getTransferRequests } from "@/lib/operations-api";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  // PENDING is the only actionable state for coordinators — APPROVED/REJECTED are terminal.
-  const totalStudents = mockStudents.length;
-  const pendingRequests = mockTransferRequests.filter((r) => r.status === "PENDING").length;
-  const totalVacancies = mockVacancies.length;
+  const [vacancies, setVacancies] = useState<VacancyResponse[]>([]);
+  const [totalStudents, setTotalStudents] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [error, setError] = useState("");
 
-  const vacancyColumns: DataTableColumn<VacancyDTO>[] = [
-    {
-      key: "title",
-      header: "Vaga",
-      sortable: true,
-      render: (vacancy) => (
-        <div>
-          <p className="font-medium text-foreground">{vacancy.title}</p>
-          {/* Department + location collapsed into one line to keep the row height consistent with other tables in the app. */}
-          <p className="text-xs text-muted-foreground">{vacancy.department} · {vacancy.location}</p>
-        </div>
-      ),
-    },
-    {
-      key: "filledSpots",
-      header: "Preenchimento",
-      render: (vacancy) => {
-        // Math.round avoids displaying e.g. "66.666...%" when totalSpots doesn't divide evenly.
-        const pct = Math.round((vacancy.filledSpots / vacancy.totalSpots) * 100);
-        return (
-          <div className="w-48 space-y-1">
-            <div className="flex justify-between text-xs font-medium">
-              <span>{vacancy.filledSpots} / {vacancy.totalSpots} vagas</span>
-              <span>{pct}%</span>
-            </div>
-            <Progress value={pct} className="h-2" />
-          </div>
-        );
-      },
-    },
-    {
-      key: "status",
-      header: "Status",
-      render: (vacancy) => {
-        // URGENT takes priority in the else-if chain — it signals HR action needed,
-        // whereas CLOSED is a terminal state that just needs acknowledgement.
-        if (vacancy.status === "CLOSED") return <Badge variant="danger">Encerrada</Badge>;
-        if (vacancy.status === "URGENT") return <Badge variant="warning">Urgente</Badge>;
-        return <Badge variant="success">Aberta</Badge>;
-      },
-    },
-    {
-      key: "actions",
-      header: "Ações",
-      className: "text-right",
-      render: (vacancy) => (
-        <Link
-          href={`/admin/vacancies?id=${vacancy.id}`}
-          className={cn(buttonVariants({ variant: "outline", size: "sm" }), 'gap-1')}
-        >
-          Detalhes
-        </Link>
-      ),
-    },
+  useEffect(() => {
+    let mounted = true;
+    Promise.all([
+      getVacancies({ size: 500, sort: "name,asc" }),
+      getStudents({ size: 500 }),
+      getTransferRequests({ size: 500, status: "PENDING" }),
+    ])
+      .then(([vacancyResponse, studentResponse, requestResponse]) => {
+        if (!mounted) return;
+        setVacancies(vacancyResponse);
+        setTotalStudents(studentResponse.length);
+        setPendingRequests(requestResponse.length);
+      })
+      .catch((requestError) => mounted && setError(
+        requestError instanceof Error ? requestError.message : "Não foi possível carregar o painel.",
+      ));
+    return () => { mounted = false; };
+  }, []);
+
+  const vacancyColumns: DataTableColumn<VacancyResponse>[] = [
+    { key: "name", header: "Vaga", sortable: true, render: (vacancy) => <div><p className="font-medium">{vacancy.name}</p><p className="text-xs text-muted-foreground">{vacancy.area} · {vacancy.placeName}</p></div> },
+    { key: "filledSpots", header: "Preenchimento", render: (vacancy) => { const percentage = vacancy.numbersVacancies === 0 ? 0 : Math.round(vacancy.filledSpots / vacancy.numbersVacancies * 100); return <div className="w-48 space-y-1"><div className="flex justify-between text-xs font-medium"><span>{vacancy.filledSpots} / {vacancy.numbersVacancies} vagas</span><span>{percentage}%</span></div><Progress value={percentage} className="h-2" /></div>; } },
+    { key: "status", header: "Status", render: (vacancy) => vacancy.status === "CLOSED" ? <Badge variant="neutral">Encerrada</Badge> : vacancy.status === "URGENT" ? <Badge variant="warning">Urgente</Badge> : <Badge variant="success">Aberta</Badge> },
   ];
 
   return (
     <AppShell breadcrumbs={[{ label: "Painel do Coordenador" }]}>
       <div className="space-y-6">
-        <PageHeader
-          title="Painel do Coordenador"
-          description="Visão geral da ocupação de turnos, turmas ativas e solicitações pendentes"
-          actions={
-            <Link
-              href="/classes/new"
-              className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
-            >
-              <Plus className="size-4" /> Nova Turma
-            </Link>
-          }
-        />
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Vacancies table — spans 2 of 3 columns so the stat sidebar doesn't compete for attention. */}
-          <div className="space-y-4 rounded-xl bg-card p-6 shadow-primary-900 shadow-sm lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-[20px] font-semibold text-foreground">Vagas Criadas</h2>
-                <p className="text-sm text-muted-foreground">Visão geral das vagas abertas nas unidades fabris</p>
-              </div>
-              <Link
-                href="/coordinator/direct"
-                className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1 text-primary")}
-              >
-                Ver todos <ArrowUpRight className="size-4" />
-              </Link>
-            </div>
-
-            {/* pageSize=5 is intentional: keeps the card within viewport height on 1080p without scrolling. */}
-            <DataTable
-              columns={vacancyColumns}
-              data={mockVacancies}
-              pageSize={5}
-              getRowKey={(row) => row.id}
-            />
-
-          </div>
-          {/* Stats Grid */}
-          <div className="flex flex-col gap-4">
-            <StatCard
-              label="Total de Vagas Criadas"
-              value={totalVacancies}
-              icon={Briefcase}
-            />
-            <StatCard
-              label="Alunos Matriculados"
-              value={totalStudents}
-              icon={Users}
-            />
-            <StatCard
-              label="Solicitações Pendentes"
-              value={pendingRequests}
-              icon={FileText}
-              // positive: false keeps the trend indicator red — pending requests always signal work outstanding.
-              trend={{ value: "Requer atenção", positive: false }}
-            />
-          </div>
+        <PageHeader title="Painel do Coordenador" description="Visão geral de vagas, alunos e solicitações" actions={<Link href="/classes/new" className={cn(buttonVariants(), "gap-2")}><Plus className="size-4" />Nova turma</Link>} />
+        {error && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-4 rounded-xl bg-card p-6 shadow-sm lg:col-span-2"><div className="flex items-center justify-between"><div><h2 className="text-xl font-semibold">Vagas cadastradas</h2><p className="text-sm text-muted-foreground">Oportunidades disponíveis nas unidades</p></div><Link href="/coordinator/direct" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "gap-1")}>Direcionar alunos<ArrowUpRight className="size-4" /></Link></div><DataTable columns={vacancyColumns} data={vacancies} pageSize={5} getRowKey={(row) => row.id} /></div>
+          <div className="flex flex-col gap-4"><StatCard label="Total de vagas" value={vacancies.length} icon={Briefcase} /><StatCard label="Alunos matriculados" value={totalStudents} icon={Users} /><StatCard label="Solicitações pendentes" value={pendingRequests} icon={FileText} trend={pendingRequests > 0 ? { value: "Requer atenção", positive: false } : undefined} /></div>
         </div>
       </div>
     </AppShell>
