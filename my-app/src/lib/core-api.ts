@@ -101,8 +101,9 @@ export interface StudentResponse {
   registration: string;
   attendanceRate: number;
   className: string;
-  shift: ClassShift;
+  shift: string;
   performanceGrade?: number;
+  operationalShiftId?: string;
 }
 
 export interface StudentUpdatePayload {
