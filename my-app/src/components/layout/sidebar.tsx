@@ -148,39 +148,36 @@ const navigation: SidebarNavSection[] = [
         icon: "Users",
         roles: ["ADMIN"],
       },
-      // Sections route hidden pending a redesign of the manager-section hierarchy.
-      // {
-      //   label: "Gestores",
-      //   href: "/admin/sections",
-      //   icon: "Briefcase",
-      //   roles: ["ADMIN"],
-      // },
+      {
+        label: "Gestores e Seções",
+        href: "/admin/sections",
+        icon: "Briefcase",
+        roles: ["ADMIN"],
+      },
       {
         label: "Locais",
         href: "/admin/locations",
         icon: "MapPin",
         roles: ["ADMIN"],
       },
-      // Admin interviews view hidden — managers own the interview workflow.
-      // {
-      //   label: "Entrevistas",
-      //   href: "/admin/interviews",
-      //   icon: "CalendarCheck",
-      //   roles: ["ADMIN"],
-      // },
+      {
+        label: "Entrevistas",
+        href: "/admin/interviews",
+        icon: "CalendarCheck",
+        roles: ["ADMIN"],
+      },
       {
         label: "Cursos",
         href: "/admin/courses",
         icon: "BookOpen",
         roles: ["ADMIN"],
       },
-      // Admin class management hidden — coordinators own class creation.
-      // {
-      //   label: "Turmas",
-      //   href: "/admin/classes",
-      //   icon: "GraduationCap",
-      //   roles: ["ADMIN"],
-      // },
+      {
+        label: "Turmas",
+        href: "/admin/classes",
+        icon: "GraduationCap",
+        roles: ["ADMIN"],
+      },
       {
         label: "Vagas",
         href: "/admin/vacancies",
@@ -198,8 +195,7 @@ const navigation: SidebarNavSection[] = [
 ];
 
 // Accepts Portuguese aliases from the backend cookie value.
-// Unmapped values default to ADMIN so the admin always sees everything —
-// safer than hiding nav items for an unknown role.
+// Unknown or missing roles receive only the coordinator-safe navigation.
 function normalizeRole(roleStr?: UserRole | string | null): UserRole {
   if (!roleStr) return "COORDINATOR";
   const upper = roleStr.toUpperCase();
@@ -226,7 +222,6 @@ export function Sidebar({ currentRole = "COORDINATOR" }: SidebarProps) {
 
       // Clear the JS-readable cookies immediately so the sidebar doesn't
       // briefly re-render with the old role if the backend call is slow.
-      // This also covers the mock session, which never hits the backend.
       document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
       document.cookie = `${ROLE_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 

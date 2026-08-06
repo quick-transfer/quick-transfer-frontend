@@ -241,21 +241,14 @@ export default function UsuariosPage() {
       key: "name",
       header: "Usuário",
       sortable: true,
-      render: (user) => {
-        const initials = user.name
-          .split(" ")
-          .map((namePart) => namePart[0])
-          .slice(0, 2)
-          .join("");
-        return (
+      render: (user) => (
           <div className="flex items-center gap-3">
             <div>
               <p className="font-medium text-foreground">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
           </div>
-        );
-      },
+        ),
     },
     {
       key: "role",
