@@ -99,7 +99,7 @@ export default function DashboardPage() {
           description="Visão geral de turmas, alunos e vagas"
           actions={
             <Link
-              href="/classes/new"
+              href="/classes#nova-turma"
               className={cn(buttonVariants({ variant: "default" }), "bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]")}
             >
               <Plus className="size-4" /> Nova Turma

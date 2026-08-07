@@ -82,7 +82,6 @@ function coordinatorToUser(coordinator: Coordinator): UserDTO {
 
 export default function UsuariosPage() {
   const [users, setUsers] = useState<UserDTO[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<CreateUserForm>(initialUserForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -118,13 +117,6 @@ export default function UsuariosPage() {
       active = false;
     };
   }, []);
-
-  const openCreateDialog = () => {
-    setForm(initialUserForm);
-    setError("");
-    setNotice("");
-    setDialogOpen(true);
-  };
 
   const updateForm = <Field extends keyof CreateUserForm,>(
     field: Field,
@@ -187,7 +179,6 @@ export default function UsuariosPage() {
       ]);
       const roleLabel = form.role === "MANAGER" ? "Gestor" : "Coordenador";
       setNotice(`${roleLabel} “${createdUser.name}” criado com sucesso.`);
-      setDialogOpen(false);
       setForm(initialUserForm);
     } catch (requestError) {
       setError(
@@ -321,17 +312,9 @@ export default function UsuariosPage() {
         <PageHeader
           title="Gerenciamento de Usuários"
           description="Controle de acessos, perfis e permissões dos operadores do sistema"
-          actions={
-            <Button
-              onClick={openCreateDialog}
-              className="gap-2 px-4 py-5 bg-primary text-white hover:bg-primary-700"
-            >
-              <UserPlus className="size-4" /> Criar usuário
-            </Button>
-          }
         />
 
-        {error && !dialogOpen && (
+        {error && (
           <div
             role="alert"
             className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
@@ -348,36 +331,30 @@ export default function UsuariosPage() {
           </div>
         )}
 
-        <DataTable
-          columns={columns}
-          data={users}
-          pageSize={10}
-          searchable
-          searchPlaceholder="Buscar por nome ou e-mail..."
-          searchKeys={["name", "email"]}
-          getRowKey={(row) => row.id}
-        />
-      </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <DataTable
+              columns={columns}
+              data={users}
+              pageSize={10}
+              searchable
+              searchPlaceholder="Buscar por nome ou e-mail..."
+              searchKeys={["name", "email"]}
+              getRowKey={(row) => row.id}
+            />
+          </div>
 
-      <Dialog
-        open={dialogOpen}
-        onOpenChange={(open) => {
-          if (saving) return;
-          setDialogOpen(open);
-          if (!open) setError("");
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <form onSubmit={handleCreateUser} className="space-y-4">
-            <DialogHeader>
-              <DialogTitle>Criar usuário</DialogTitle>
-              <DialogDescription>
-                Selecione o tipo de usuário e cadastre as credenciais para o primeiro acesso.
-              </DialogDescription>
-            </DialogHeader>
+          <div className="sticky top-6 h-fit space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Criar Usuário</h2>
+              <p className="text-xs text-slate-500">Cadastre as credenciais para o primeiro acesso.</p>
+            </div>
 
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">Tipo de usuário</legend>
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <fieldset>
+                <legend className="mb-1 text-xs font-semibold text-slate-700">
+                  Tipo de Usuário <span className="text-red-500">*</span>
+                </legend>
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
@@ -385,7 +362,7 @@ export default function UsuariosPage() {
                   aria-pressed={form.role === "MANAGER"}
                   onClick={() => updateForm("role", "MANAGER")}
                   disabled={saving}
-                  className="h-10"
+                  className="h-10 text-sm"
                 >
                   Gestor
                 </Button>
@@ -395,62 +372,66 @@ export default function UsuariosPage() {
                   aria-pressed={form.role === "COORDINATOR"}
                   onClick={() => updateForm("role", "COORDINATOR")}
                   disabled={saving}
-                  className="h-10"
+                  className="h-10 text-sm"
                 >
                   Coordenador
                 </Button>
               </div>
-            </fieldset>
+              </fieldset>
 
-            {error && (
-              <div
-                role="alert"
-                className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-              >
-                {error}
-              </div>
-            )}
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="space-y-1.5 text-sm font-medium">
-                <span>Nome completo</span>
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-700">
+                  Nome Completo <span className="text-red-500">*</span>
+                </span>
                 <Input
                   value={form.name}
                   onChange={(event) => updateForm("name", event.target.value)}
                   autoComplete="name"
                   maxLength={100}
                   disabled={saving}
+                  placeholder="Ex: Maria da Silva"
+                  className="mt-1 h-10 border-slate-200 text-sm"
                   required
                 />
               </label>
 
-              <label className="space-y-1.5 text-sm font-medium">
-                <span>Usuário</span>
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-700">
+                  Usuário <span className="text-red-500">*</span>
+                </span>
                 <Input
                   value={form.username}
                   onChange={(event) => updateForm("username", event.target.value)}
                   autoComplete="username"
                   maxLength={100}
                   disabled={saving}
+                  placeholder="Ex: maria.silva"
+                  className="mt-1 h-10 border-slate-200 text-sm"
                   required
                 />
               </label>
 
-              <label className="space-y-1.5 text-sm font-medium sm:col-span-2">
-                <span>E-mail</span>
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-700">
+                  E-mail <span className="text-red-500">*</span>
+                </span>
                 <Input
                   type="email"
                   value={form.email}
                   onChange={(event) => updateForm("email", event.target.value)}
                   autoComplete="email"
                   disabled={saving}
+                  placeholder="Ex: maria.silva@email.com"
+                  className="mt-1 h-10 border-slate-200 text-sm"
                   required
                 />
               </label>
 
               {form.role === "MANAGER" && (
-                <label className="space-y-1.5 text-sm font-medium">
-                  <span>Seção</span>
+                <label className="block">
+                  <span className="text-xs font-semibold text-slate-700">
+                    Seção <span className="text-red-500">*</span>
+                  </span>
                   <Select
                     value={form.section}
                     onValueChange={(value) =>
@@ -459,7 +440,7 @@ export default function UsuariosPage() {
                     disabled={saving}
                     required
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="mt-1 h-10 w-full border-slate-200 text-sm">
                       <SelectValue placeholder="Selecione a seção" />
                     </SelectTrigger>
                     <SelectContent>
@@ -470,12 +451,10 @@ export default function UsuariosPage() {
                 </label>
               )}
 
-              <label
-                className={`space-y-1.5 text-sm font-medium ${
-                  form.role === "COORDINATOR" ? "sm:col-span-2" : ""
-                }`}
-              >
-                <span>Senha inicial</span>
+              <label className="block">
+                <span className="text-xs font-semibold text-slate-700">
+                  Senha Inicial <span className="text-red-500">*</span>
+                </span>
                 <Input
                   type="password"
                   value={form.password}
@@ -483,33 +462,30 @@ export default function UsuariosPage() {
                   autoComplete="new-password"
                   minLength={14}
                   disabled={saving}
+                  className="mt-1 h-10 border-slate-200 text-sm"
                   required
                 />
               </label>
-            </div>
 
-            <p className="text-xs text-muted-foreground">{PASSWORD_REQUIREMENTS}</p>
+              <p className="text-xs text-slate-500">{PASSWORD_REQUIREMENTS}</p>
 
-            <DialogFooter>
               <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
+                type="submit"
                 disabled={saving}
+                className="mt-2 h-10 w-full gap-2 bg-primary-900 text-white hover:bg-primary-950"
               >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saving}>
+                <UserPlus className="size-4" />
                 {saving
                   ? "Criando..."
                   : form.role === "MANAGER"
                     ? "Criar gestor"
                     : "Criar coordenador"}
               </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
         <DialogContent className="bg-white sm:max-w-md">
           <DialogHeader>

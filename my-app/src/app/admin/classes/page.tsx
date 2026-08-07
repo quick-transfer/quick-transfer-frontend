@@ -123,7 +123,7 @@ export default function TurmasPage() {
           description="Controle de turmas ativas, planejamento de turmas e matrículas"
           actions={
             <Link
-              href="/classes/new"
+              href="/classes#nova-turma"
               className={cn(buttonVariants({ variant: "default" }), "gap-2 bg-primary text-white hover:bg-primary-700")}
             >
               <Plus className="size-4" /> Nova Turma

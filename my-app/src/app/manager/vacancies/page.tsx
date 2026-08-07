@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AppShell } from "@/components/layout";
 import { StatCard } from "@/components/shared/stat-card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Briefcase, Users, CalendarCheck, Search, Plus, CheckCircle2, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -272,13 +273,13 @@ export default function ManagerVacanciesPage() {
                 />
               </div>
 
-              <button
+              <Button
                 type="submit"
                 disabled={!jobTitle.trim() || !description.trim()}
-                className="w-full py-2.5 text-sm font-semibold text-white bg-primary-900 hover:bg-primary-950 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition flex items-center justify-center gap-2"
+                className="mt-2 h-10 w-full gap-2 bg-primary-900 text-white hover:bg-primary-950"
               >
                 <Plus className="size-4" /> Criar Vaga
-              </button>
+              </Button>
             </form>
           </div>
         </div>
