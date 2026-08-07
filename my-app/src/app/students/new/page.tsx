@@ -3,11 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 
 import { AppShell, PageHeader } from "@/components/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createAppStudent, getClasses } from "@/lib/application-api";
@@ -75,41 +74,79 @@ export default function NewStudentPage() {
 
         {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
-        <Card>
-          <CardHeader><CardTitle>Dados do aluno</CardTitle></CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="student-name">Nome *</Label>
-                <Input id="student-name" value={name} onChange={(event) => setName(event.target.value)} required maxLength={100} />
+        <div className="h-fit space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Cadastrar Aluno</h2>
+            <p className="text-xs text-slate-500">Preencha os dados do aluno para efetuar o cadastro.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="student-name" className="text-xs font-semibold text-slate-700">
+                  Nome <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="student-name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Ex: João da Silva"
+                  className="mt-1 h-10 border-slate-200 text-sm"
+                  required
+                  maxLength={100}
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-email">E-mail *</Label>
-                <Input id="student-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+              <div>
+                <Label htmlFor="student-email" className="text-xs font-semibold text-slate-700">
+                  E-mail <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="student-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Ex: joao.silva@email.com"
+                  className="mt-1 h-10 border-slate-200 text-sm"
+                  required
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-age">Idade *</Label>
-                <Input id="student-age" type="number" min={1} value={age} onChange={(event) => setAge(event.target.value)} required />
+              <div>
+                <Label htmlFor="student-age" className="text-xs font-semibold text-slate-700">
+                  Idade <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="student-age"
+                  type="number"
+                  min={1}
+                  value={age}
+                  onChange={(event) => setAge(event.target.value)}
+                  className="mt-1 h-10 border-slate-200 text-sm"
+                  required
+                />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="student-class">Turma *</Label>
+              <div>
+                <Label htmlFor="student-class" className="text-xs font-semibold text-slate-700">
+                  Turma <span className="text-red-500">*</span>
+                </Label>
                 <select
                   id="student-class"
                   value={classId}
                   onChange={(event) => setClassId(event.target.value)}
-                  className="h-10 w-full rounded-md border border-input bg-white px-3 text-sm"
+                  className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                   required
                 >
                   <option value="">Selecione uma turma</option>
                   {classes.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </div>
-              <Button type="submit" disabled={saving || classes.length === 0} className="w-full">
-                {saving ? "Cadastrando..." : "Cadastrar aluno"}
+              <Button
+                type="submit"
+                disabled={saving || classes.length === 0}
+                className="mt-2 h-10 w-full gap-2 bg-primary-900 text-white hover:bg-primary-950"
+              >
+                <Save className="size-4" /> {saving ? "Cadastrando..." : "Cadastrar Aluno"}
               </Button>
-            </form>
-          </CardContent>
-        </Card>
+          </form>
+        </div>
       </div>
     </AppShell>
   );

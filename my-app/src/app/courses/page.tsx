@@ -6,6 +6,7 @@ import { DataTable, type DataTableColumn } from "@/components/shared/data-table"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,6 @@ export default function CoordinatorCoursesPage() {
   const [filterTab, setFilterTab] = useState<string>("ALL");
   const [selectedCourse, setSelectedCourse] = useState<CourseDTO | null>(null);
   const [isStudentsOpen, setIsStudentsOpen] = useState(false);
-  const [isNewOpen, setIsNewOpen] = useState(false);
   const [formName, setFormName] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [courses, setCourses] = useState<CourseDTO[]>([]);
@@ -71,10 +71,9 @@ export default function CoordinatorCoursesPage() {
     try {
       const created = await createCourse(newCourse);
       setCourses((prev) => [...prev, created]);
-    setIsNewOpen(false);
-    setFormName("");
-    setSuccessMsg("Curso criado com sucesso!");
-    setTimeout(() => setSuccessMsg(""), 4000);
+      setFormName("");
+      setSuccessMsg("Curso criado com sucesso!");
+      setTimeout(() => setSuccessMsg(""), 4000);
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Não foi possível criar o curso.');
     } finally {
@@ -155,36 +154,68 @@ export default function CoordinatorCoursesPage() {
         <PageHeader
           title="Cursos"
           description="Gerencie os cursos técnicos e acompanhe os alunos matriculados em cada programa"
-          actions={
-            <Button
-              className="gap-2 bg-primary text-white hover:bg-primary-700 px-4 py-5 text-[16px]"
-              onClick={() => setIsNewOpen(true)}
-            >
-              <Plus className="size-4" /> Novo Curso
-            </Button>
-          }
         />
 
         {error && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
         )}
-        <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-white p-1">
-            <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
-            <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
-            <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
+              <TabsList className="bg-white p-1">
+                <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
+                <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
+                <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
+              </TabsList>
+            </Tabs>
 
-        <DataTable
-          columns={columns}
-          data={filteredCourses}
-          pageSize={10}
-          searchable
-          searchPlaceholder="Buscar curso por nome ou código..."
-          searchKeys={["name", "code", "coordinatorName"]}
-          getRowKey={(row) => row.id}
-        />
+            <DataTable
+              columns={columns}
+              data={filteredCourses}
+              pageSize={10}
+              searchable
+              searchPlaceholder="Buscar curso por nome ou código..."
+              searchKeys={["name", "code", "coordinatorName"]}
+              getRowKey={(row) => row.id}
+            />
+          </div>
+
+          <div className="sticky top-6 h-fit space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">Novo Curso</h2>
+              <p className="text-xs text-slate-500">Preencha os dados para cadastrar um novo curso.</p>
+            </div>
+
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleCreate();
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <Label htmlFor="course-name" className="text-xs font-semibold text-slate-700">
+                  Nome do Curso <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="course-name"
+                  value={formName}
+                  onChange={(event) => setFormName(event.target.value)}
+                  placeholder="Ex: Técnico em Mecatrônica"
+                  className="mt-1 h-10 border-slate-200 text-sm"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={saving || !formName.trim()}
+                className="mt-2 h-10 w-full gap-2 bg-primary-900 text-white hover:bg-primary-950"
+              >
+                <Plus className="size-4" /> {saving ? "Criando..." : "Criar Curso"}
+              </Button>
+            </form>
+          </div>
+        </div>
       </div>
 
       {/* Modal - Alunos do Curso */}
@@ -222,41 +253,6 @@ export default function CoordinatorCoursesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsStudentsOpen(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Novo Curso */}
-      <Dialog open={isNewOpen} onOpenChange={setIsNewOpen}>
-        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900">Novo Curso</DialogTitle>
-            <DialogDescription className="text-xs text-slate-500">
-              Preencha as informações para criar um novo curso.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Nome do Curso <span className="text-red-500">*</span>
-              </label>
-              <Input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Ex: Técnico em Mecatrônica"
-                className="h-10 border-slate-200"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsNewOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={handleCreate}
-              disabled={saving || !formName.trim()}
-              className="bg-primary-900 text-white hover:bg-primary-950"
-            >
-              {saving ? 'Criando...' : 'Criar Curso'}
-            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

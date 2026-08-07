@@ -61,7 +61,7 @@ export default function TurmasPage() {
       name: className.trim(),
       code: classCode.trim(),
       courseName: mockCourses.find((c) => c.id === course)?.name || "Curso Geral",
-      period: period as any,
+      period,
       maxStudents: 30,
       totalStudents: 0,
       status: "PLANNED",
@@ -204,7 +204,7 @@ export default function TurmasPage() {
           </div>
 
           {/* Lado Direito - Cadastrar Turma */}
-          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6">
+          <div id="nova-turma" className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-4 h-fit sticky top-6 scroll-mt-6">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Cadastrar Turma</h2>
               <p className="text-xs text-slate-500">Preencha os dados da turma para efetuar o cadastro.</p>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, BriefcaseBusiness } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,64 +102,68 @@ export default function NewVacancyPage() {
         )}
 
 
-        <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
-            <div className="rounded-lg bg-primary-50 p-2 text-primary-800">
-              <BriefcaseBusiness className="size-5" />
-            </div>
-            <div>
-              <h2 className="font-bold text-slate-900">Dados da oportunidade</h2>
-              <p className="text-xs text-slate-500">Todos os campos marcados são obrigatórios.</p>
-            </div>
+        <div className="h-fit space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Abrir Nova Vaga</h2>
+            <p className="text-xs text-slate-500">Preencha os dados da vaga para efetuar o cadastro.</p>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Nome da vaga *</span>
-              <Input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} required placeholder="Ex.: Aprendiz de manutenção" />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Nome da Vaga <span className="text-red-500">*</span>
+              </span>
+              <Input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} required placeholder="Ex: Aprendiz de manutenção" className="mt-1 h-10 border-slate-200 text-sm" />
             </label>
 
-            <label className="space-y-1.5">
-              <span className="text-sm font-semibold text-slate-700">Área *</span>
-              <select value={area} onChange={(event) => setArea(event.target.value as VacancyArea)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Área <span className="text-red-500">*</span>
+              </span>
+              <select value={area} onChange={(event) => setArea(event.target.value as VacancyArea)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 {Object.entries(areaLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
 
-            <label className="space-y-1.5">
-              <span className="text-sm font-semibold text-slate-700">Turno *</span>
-              <select value={shift} onChange={(event) => setShift(event.target.value as VacancyShift)} className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Turno <span className="text-red-500">*</span>
+              </span>
+              <select value={shift} onChange={(event) => setShift(event.target.value as VacancyShift)} className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500">
                 {Object.entries(shiftLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
               </select>
             </label>
 
-            <label className="space-y-1.5">
-              <span className="text-sm font-semibold text-slate-700">Local *</span>
-              <select value={placeId} onChange={(event) => setPlaceId(event.target.value)} disabled={loadingPlaces} required className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm disabled:bg-slate-50">
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Local <span className="text-red-500">*</span>
+              </span>
+              <select value={placeId} onChange={(event) => setPlaceId(event.target.value)} disabled={loadingPlaces} required className="mt-1 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:bg-slate-50">
                 <option value="">{loadingPlaces ? "Carregando locais..." : places.length === 0 ? "Nenhum local cadastrado" : "Selecione um local"}</option>
                 {places.map((place) => <option key={place.id} value={place.id}>{place.placeName} - {place.park} - {place.section}</option>)}
               </select>
-              {/* Locais sao cadastrados somente pelo fluxo administrativo. */}
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-sm font-semibold text-slate-700">Número de posições *</span>
-              <Input type="number" min={1} step={1} value={numbersVacancies} onChange={(event) => setNumbersVacancies(Number(event.target.value))} required />
             </label>
 
-            <label className="space-y-1.5 sm:col-span-2">
-              <span className="text-sm font-semibold text-slate-700">Descrição *</span>
-              <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={6} required placeholder="Descreva as atividades e o perfil esperado..." className="w-full resize-y rounded-md border border-slate-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Número de Posições <span className="text-red-500">*</span>
+              </span>
+              <Input type="number" min={1} step={1} value={numbersVacancies} onChange={(event) => setNumbersVacancies(Number(event.target.value))} required className="mt-1 h-10 border-slate-200 text-sm" />
             </label>
 
-          </div>
+            <label className="block">
+              <span className="text-xs font-semibold text-slate-700">
+                Descrição <span className="text-red-500">*</span>
+              </span>
+              <textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={5} required placeholder="Descreva as atividades e o perfil esperado..." className="mt-1 w-full resize-y rounded-lg border border-slate-200 bg-white p-3 text-sm outline-none focus:ring-2 focus:ring-primary-500" />
+            </label>
 
-          <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
-            <Button type="button" variant="outline" onClick={() => router.push("/manager/vacancies")}>Cancelar</Button>
-            <Button type="submit" disabled={submitting || loadingPlaces || !placeId} className="bg-primary-900 text-white">
+            <Button type="submit" disabled={submitting || loadingPlaces || !placeId} className="mt-2 h-10 w-full gap-2 bg-primary-900 text-white hover:bg-primary-950">
+              <Plus className="size-4" />
               {submitting ? "Criando..." : "Criar vaga"}
             </Button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </AppShell>
   );
