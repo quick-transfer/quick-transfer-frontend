@@ -1,5 +1,4 @@
 import { apiFetch, apiFetchCollection } from "@/lib/api";
-import { mockInterviews, mockPlaces, mockStudents, mockUsers, mockVacancies } from '@/lib/mock-data';
 import { apiFirst, createLocalId, readCollection, writeCollection } from '@/lib/offline-store';
 
 // ── Enumerations ──
@@ -173,66 +172,12 @@ export const interviewStatusLabels: Record<string, string> = {
 // ── API functions ──
 // IDs are always encodeURIComponent'd to handle UUIDs safely in path segments.
 
-const vacancySeed: Vacancy[] = mockVacancies.map((item) => ({
-  id: item.id,
-  name: item.title,
-  description: `${item.department} - ${item.location}`,
-  numbersVacancies: item.totalSpots,
-  area: 'IT',
-  shift: 'FIRST',
-  park: item.location,
-  section: item.department,
-}));
-
-const placeSeed: Place[] = mockPlaces.map((item) => ({
-  id: item.id,
-  placeName: item.name,
-  park: item.id === 'plc-2' ? 'WEG_II' : 'WEG_I',
-  section: item.code,
-}));
-
-const studentSeed: Student[] = mockStudents.map((item) => ({
-  id: item.id,
-  name: item.name,
-  email: item.email,
-  age: 18,
-  averageGrade: item.performanceGrade,
-  acronym: item.registration,
-  course: item.courseName,
-  statusStudentInterview: 'NOT_ASSOCIATED',
-  hasSeenEmail: false,
-  statusStudent: 'ENROLLED',
-}));
-
-const interviewSeed: Interview[] = mockInterviews.map((item) => ({
-  id: item.id,
-  interviewerName: item.interviewerName,
-  dateTime: `${item.scheduledDate}T${item.scheduledTime}:00`,
-  park: 'WEG I',
-  section: item.vacancyTitle,
-  nameStudent: item.candidateName,
-  nameManager: item.interviewerName,
-  shift: item.scheduledTime,
-}));
-
-const managerSeed: Manager[] = mockUsers
-  .filter((item) => item.role === 'MANAGER')
-  .map((item) => ({
-    id: item.id,
-    name: item.name,
-    username: item.email.split('@')[0],
-    email: item.email,
-    section: 'IT',
-  }));
-
-const coordinatorSeed: Coordinator[] = mockUsers
-  .filter((item) => item.role === 'COORDINATOR')
-  .map((item) => ({
-    id: item.id,
-    name: item.name,
-    username: item.email.split('@')[0],
-    email: item.email,
-  }));
+const vacancySeed: Vacancy[] = [];
+const placeSeed: Place[] = [];
+const studentSeed: Student[] = [];
+const interviewSeed: Interview[] = [];
+const managerSeed: Manager[] = [];
+const coordinatorSeed: Coordinator[] = [];
 
 export function getVacancies() {
   return apiFirst(

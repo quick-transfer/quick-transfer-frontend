@@ -115,12 +115,7 @@ const navigation: SidebarNavSection[] = [
         icon: "CalendarClock",
         roles: ["MANAGER", "ADMIN"],
       },
-      {
-        label: "Locais",
-        href: "/manager/locations",
-        icon: "MapPin",
-        roles: ["MANAGER", "ADMIN"],
-      },
+
     ],
   },
   {
@@ -136,6 +131,12 @@ const navigation: SidebarNavSection[] = [
         label: "Usuários",
         href: "/admin/users",
         icon: "Users",
+        roles: ["ADMIN"],
+      },
+      {
+        label: "Locais",
+        href: "/admin/locations",
+        icon: "MapPin",
         roles: ["ADMIN"],
       },
       // Sections route hidden pending a redesign of the manager-section hierarchy.

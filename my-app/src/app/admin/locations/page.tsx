@@ -224,7 +224,7 @@ export default function ManagerLocationsPage() {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Gestor", href: "/manager/vacancies" },
+        { label: "Admin", href: "/admin" },
         { label: "Locais" },
       ]}
     >

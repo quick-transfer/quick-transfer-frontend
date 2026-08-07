@@ -6,7 +6,6 @@ import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { mockClasses } from "@/lib/mock-data";
 import type { ClassDTO } from "@/types";
 import { Plus, GraduationCap, Edit } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { getClasses, updateClass } from '@/lib/application-api';
 
 export default function TurmasPage() {
-  const [classes, setClasses] = useState<ClassDTO[]>(mockClasses);
+  const [classes, setClasses] = useState<ClassDTO[]>([]);
   const [editing, setEditing] = useState<ClassDTO | null>(null);
   const [formName, setFormName] = useState('');
   const [formPeriod, setFormPeriod] = useState('');

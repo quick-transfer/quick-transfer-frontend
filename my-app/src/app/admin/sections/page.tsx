@@ -97,7 +97,7 @@ const sectionLabels: Record<Section, string> = {
 };
 
 export default function AdminSectionsPage() {
-  const [sections, setSections] = useState<ManagerSectionDTO[]>(mockSections);
+  const [sections, setSections] = useState<ManagerSectionDTO[]>([]);
   const [detailSection, setDetailSection] = useState<ManagerSectionDTO | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -108,7 +108,7 @@ export default function AdminSectionsPage() {
   const [newSection, setNewSection] = useState<Section>("PRODUCAO");
 
   useEffect(() => {
-    const cached = readCollection<ManagerSectionDTO>('sections', mockSections);
+    const cached = readCollection<ManagerSectionDTO>('sections', []);
     if (cached && cached.length > 0) {
       setSections(cached);
     }

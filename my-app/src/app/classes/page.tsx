@@ -23,15 +23,15 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ToastCard } from "@/components/ui/toast-card";
-import type { ClassDTO } from "@/types";
+import type { ClassDTO, CourseDTO } from "@/types";
 import { GraduationCap, Eye, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { getClasses } from '@/lib/application-api';
-import { mockCourses } from "@/lib/mock-data";
+import { getClasses, getCourses } from '@/lib/application-api';
 
 export default function TurmasPage() {
   const [classes, setClasses] = useState<ClassDTO[]>([]);
+  const [courses, setCourses] = useState<CourseDTO[]>([]);
   const [error, setError] = useState('');
   const [className, setClassName] = useState("");
   const [classCode, setClassCode] = useState("");
@@ -46,6 +46,7 @@ export default function TurmasPage() {
     getClasses().then(setClasses).catch((loadError) => {
       setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar as turmas.');
     });
+    getCourses().then(setCourses).catch(() => {});
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -60,7 +61,7 @@ export default function TurmasPage() {
       id: `cls-${Date.now()}`,
       name: className.trim(),
       code: classCode.trim(),
-      courseName: mockCourses.find((c) => c.id === course)?.name || "Curso Geral",
+      courseName: courses.find((c) => c.id === course)?.name || "Curso Geral",
       period: period as any,
       maxStudents: 30,
       totalStudents: 0,
@@ -246,7 +247,7 @@ export default function TurmasPage() {
                     <SelectValue placeholder="Selecione o curso" />
                   </SelectTrigger>
                   <SelectContent>
-                    {mockCourses.map((c) => (
+                    {courses.map((c) => (
                       <SelectItem key={c.id} value={c.id}>
                         {c.name} ({c.code})
                       </SelectItem>

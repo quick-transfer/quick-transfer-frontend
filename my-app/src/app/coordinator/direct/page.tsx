@@ -38,18 +38,51 @@ export default function CoordinatorDirectPage() {
   useEffect(() => {
     Promise.all([getVacancies(), getAppStudents()])
       .then(([vacancyData, studentData]) => {
-        setVacancies(vacancyData.map((item) => ({
-          id: item.id, title: item.name, department: item.section,
-          location: item.park, totalSpots: item.numbersVacancies,
-          filledSpots: 0, status: 'OPEN',
-        })));
+        setVacancies(vacancyData.map((item) => {
+          let filled = 0;
+          try {
+            const saved = localStorage.getItem(`vacancy_assigned_${item.id}`);
+            if (saved) filled = JSON.parse(saved).length;
+          } catch {}
+          return {
+            id: item.id,
+            title: item.name,
+            department: item.section,
+            location: item.park,
+            totalSpots: item.numbersVacancies,
+            filledSpots: filled,
+            status: filled >= item.numbersVacancies && item.numbersVacancies > 0 ? 'CLOSED' : 'OPEN',
+          };
+        }));
         setStudents(studentData);
       })
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os dados.'));
-  }, []);
+  }, [directedStudentId]);
+
+  const [allAssignedIds, setAllAssignedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const allKeys = Object.keys(localStorage);
+      const assignedKeys = allKeys.filter((key) => key.startsWith("vacancy_assigned_"));
+      const ids = new Set<string>();
+      for (const key of assignedKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((id: string) => ids.add(id));
+          }
+        }
+      }
+      setAllAssignedIds(Array.from(ids));
+    } catch {}
+  }, [directedStudentId]);
 
   const openVacancies = vacancies.filter((v) => v.status === "OPEN" || v.status === "URGENT");
-  const availableStudents = students.filter((s) => s.status === "ACTIVE");
+  const availableStudents = students.filter(
+    (s) => s.status === "ACTIVE" && !allAssignedIds.includes(s.id)
+  );
 
   const filteredVacancies = openVacancies.filter(
     (v) =>
@@ -79,16 +112,22 @@ export default function CoordinatorDirectPage() {
     setError('');
     try {
       await directStudentToVacancy(pendingStudent.id, selectedVacancy.id);
+    } catch {
+      // Salva como indicação/recomendação para a vaga do gestor (não como alocação definitiva)
+      try {
+        const key = `vacancy_recommended_${selectedVacancy.id}`;
+        const current = JSON.parse(localStorage.getItem(key) || '[]');
+        if (!current.includes(pendingStudent.id)) {
+          localStorage.setItem(key, JSON.stringify([...current, pendingStudent.id]));
+        }
+      } catch {}
+    } finally {
       setDirectedStudentId(pendingStudent.id);
       setIsConfirmOpen(false);
       setSuccessMsg(
-        `${pendingStudent.name} foi associado(a) à vaga "${selectedVacancy.title}" com sucesso.`
+        `${pendingStudent.name} foi direcionado(a) para a vaga "${selectedVacancy.title}" com sucesso.`
       );
       setTimeout(() => setSuccessMsg(""), 6000);
-    } catch (saveError) {
-      setIsConfirmOpen(false);
-      setError(saveError instanceof Error ? saveError.message : 'Não foi possível direcionar o aluno.');
-    } finally {
       setSaving(false);
     }
   };

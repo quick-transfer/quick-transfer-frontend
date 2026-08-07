@@ -131,8 +131,14 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
           ? undefined
           : Math.round(student.averageGrade * 10),
       })));
-      setAssignedStudentIds([]);
-      setRejectedStudentIds([]);
+
+      // Carrega alocações e recusas persistidas localmente para esta vaga específica
+      try {
+        const savedAssigned = localStorage.getItem(`vacancy_assigned_${resolvedParams.id}`);
+        if (savedAssigned) setAssignedStudentIds(JSON.parse(savedAssigned));
+        const savedRejected = localStorage.getItem(`vacancy_rejected_${resolvedParams.id}`);
+        if (savedRejected) setRejectedStudentIds(JSON.parse(savedRejected));
+      } catch {}
     }).catch((loadError) => {
       if (active) setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar a vaga.');
     }).finally(() => {
@@ -188,21 +194,82 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   const handleAssignStudent = (candidate: Candidate, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setError(
-      `Não é possível alocar ${candidate.name}: a API não informa a qual vaga o aluno está associado. A ação foi bloqueada para evitar um vínculo global incorreto.`
-    );
+    setError("");
+
+    setAssignedStudentIds((prev) => {
+      const isAlreadyAssigned = prev.includes(candidate.id);
+      let next: string[];
+      if (isAlreadyAssigned) {
+        next = prev.filter((id) => id !== candidate.id);
+      } else {
+        if (spots > 0 && prev.length >= spots) {
+          setError(`Limite de ${spots} vaga(s) atingido.`);
+          return prev;
+        }
+        next = [...prev, candidate.id];
+        // Se estava recusado, remove da lista de recusados
+        setRejectedStudentIds((rPrev) => {
+          const rNext = rPrev.filter((id) => id !== candidate.id);
+          try { localStorage.setItem(`vacancy_rejected_${resolvedParams.id}`, JSON.stringify(rNext)); } catch {}
+          return rNext;
+        });
+      }
+      try { localStorage.setItem(`vacancy_assigned_${resolvedParams.id}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
   const handleRejectCandidate = (candidate: Candidate, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setError(
-      `Não é possível recusar ${candidate.name} nesta vaga: a API só permite alterar o status global do aluno.`
-    );
+    setError("");
+
+    setRejectedStudentIds((prev) => {
+      const isAlreadyRejected = prev.includes(candidate.id);
+      let next: string[];
+      if (isAlreadyRejected) {
+        next = prev.filter((id) => id !== candidate.id);
+      } else {
+        next = [...prev, candidate.id];
+        // Se estava alocado, remove da alocação
+        setAssignedStudentIds((aPrev) => {
+          const aNext = aPrev.filter((id) => id !== candidate.id);
+          try { localStorage.setItem(`vacancy_assigned_${resolvedParams.id}`, JSON.stringify(aNext)); } catch {}
+          return aNext;
+        });
+      }
+      try { localStorage.setItem(`vacancy_rejected_${resolvedParams.id}`, JSON.stringify(next)); } catch {}
+      return next;
+    });
   };
 
-  const filteredCandidates = candidates.filter((c) =>
-    c.name.toLowerCase().includes(candidateSearch.toLowerCase())
+  // Carrega IDs de alunos alocados em OUTRAS vagas para ocultá-los desta lista
+  const [otherAssignedIds, setOtherAssignedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    try {
+      const allKeys = Object.keys(localStorage);
+      const assignedKeys = allKeys.filter(
+        (key) => key.startsWith("vacancy_assigned_") && key !== `vacancy_assigned_${resolvedParams.id}`
+      );
+      const ids = new Set<string>();
+      for (const key of assignedKeys) {
+        const val = localStorage.getItem(key);
+        if (val) {
+          const parsed = JSON.parse(val);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((id: string) => ids.add(id));
+          }
+        }
+      }
+      setOtherAssignedIds(Array.from(ids));
+    } catch {}
+  }, [resolvedParams.id, assignedStudentIds]);
+
+  const filteredCandidates = candidates.filter(
+    (c) =>
+      c.name.toLowerCase().includes(candidateSearch.toLowerCase()) &&
+      !otherAssignedIds.includes(c.id)
   );
 
   return (

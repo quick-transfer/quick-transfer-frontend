@@ -5,13 +5,12 @@ import { useEffect, useState } from 'react';
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-import { mockInterviews } from "@/lib/mock-data";
 import type { InterviewDTO } from "@/types";
 import { Calendar, Clock } from "lucide-react";
 import { getAdminInterviews } from '@/lib/application-api';
 
 export default function EntrevistasPage() {
-  const [interviews, setInterviews] = useState<InterviewDTO[]>(mockInterviews);
+  const [interviews, setInterviews] = useState<InterviewDTO[]>([]);
   const [error, setError] = useState('');
 
   useEffect(() => {

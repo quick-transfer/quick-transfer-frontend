@@ -16,13 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToastCard } from "@/components/ui/toast-card";
-import { mockCourses } from "@/lib/mock-data";
 import type { CourseDTO } from "@/types";
 import { Edit, Plus, Trash2 } from "lucide-react";
 import { createCourse, deleteCourse, getCourses, updateCourse } from '@/lib/application-api';
 
 export default function CursosAdminPage() {
-  const [courses, setCourses] = useState<CourseDTO[]>(mockCourses);
+  const [courses, setCourses] = useState<CourseDTO[]>([]);
   const [filterTab, setFilterTab] = useState<string>("ALL");
   const [editingCourse, setEditingCourse] = useState<CourseDTO | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);

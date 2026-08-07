@@ -15,13 +15,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { ToastCard } from "@/components/ui/toast-card";
-import { mockVacancies } from "@/lib/mock-data";
 import type { VacancyDTO } from "@/types";
 import { Edit, Trash2, Plus } from "lucide-react";
 import { deleteAdminVacancy, getAdminVacancies, updateAdminVacancy } from '@/lib/application-api';
 
 export default function VagasPage() {
-  const [vacancies, setVacancies] = useState<VacancyDTO[]>(mockVacancies);
+  const [vacancies, setVacancies] = useState<VacancyDTO[]>([]);
   const [editingVacancy, setEditingVacancy] = useState<VacancyDTO | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);

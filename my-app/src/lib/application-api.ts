@@ -1,11 +1,4 @@
 import { ApiError, apiFetch, apiFetchCollection } from '@/lib/api';
-import {
-  mockClasses,
-  mockCourses,
-  mockInterviews,
-  mockStudents,
-  mockUsers,
-} from '@/lib/mock-data';
 import { apiFirst, createLocalId, readCollection, writeCollection } from '@/lib/offline-store';
 import type {
   ClassDTO,
@@ -16,7 +9,9 @@ import type {
   VacancyDTO,
 } from '@/types';
 import {
+  createInterview,
   deleteVacancy as deleteManagerVacancy,
+  getManagers,
   getPlaces as getManagerPlaces,
   getVacancies as getManagerVacancies,
   getVacancy as getManagerVacancy,
@@ -200,7 +195,7 @@ export function getAppUsers() {
         ...coordinators.map((item) => mapUser(item, 'COORDINATOR')),
       ];
     },
-    () => readCollection('users', mockUsers)
+    () => readCollection('users', [])
   );
 }
 
@@ -212,21 +207,21 @@ export function updateAppUser(user: UserDTO) {
       });
       return { ...user, name: updated.name, email: updated.email };
     },
-    () => replaceLocal('users', mockUsers, user)
+    () => replaceLocal('users', [], user)
   );
 }
 
 export function deleteAppUser(id: string) {
   return apiFirst(
     () => apiFetch(`/user/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-    () => deleteLocal('users', mockUsers, id)
+    () => deleteLocal('users', [], id)
   );
 }
 
 export function getCourses() {
   return apiFirst(
     async () => (await apiFetchCollection<BackendCourse>('/course/find/all')).map(mapCourse),
-    () => readCollection('courses', mockCourses)
+    () => readCollection('courses', [])
   );
 }
 
@@ -258,7 +253,7 @@ export function createCourse(input: Omit<CourseDTO, 'id'>) {
     },
     () => {
       const created = { id: createLocalId('crs'), ...input };
-      writeCollection('courses', [...readCollection('courses', mockCourses), created]);
+      writeCollection('courses', [...readCollection('courses', []), created]);
       return created;
     }
   );
@@ -288,21 +283,21 @@ export function updateCourse(course: CourseDTO) {
       });
       return mapCourse(updated);
     },
-    () => replaceLocal('courses', mockCourses, course)
+    () => replaceLocal('courses', [], course)
   );
 }
 
 export function deleteCourse(id: string) {
   return apiFirst(
     () => apiFetch(`/course/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-    () => deleteLocal('courses', mockCourses, id)
+    () => deleteLocal('courses', [], id)
   );
 }
 
 export function getClasses() {
   return apiFirst(
     async () => (await apiFetchCollection<BackendClass>('/class/find/all')).map(mapClass),
-    () => readCollection('classes', mockClasses)
+    () => readCollection('classes', [])
   );
 }
 
@@ -342,7 +337,7 @@ export function createClass(input: Omit<ClassDTO, 'id'> & {
         totalStudents: input.totalStudents, maxStudents: input.maxStudents,
         status: input.status,
       };
-      writeCollection('classes', [...readCollection('classes', mockClasses), created]);
+      writeCollection('classes', [...readCollection('classes', []), created]);
       return created;
     }
   );
@@ -358,28 +353,28 @@ export function updateClass(item: ClassDTO) {
         status: item.status === 'COMPLETED' ? 'FINISHED' : item.status === 'IN_PROGRESS' ? 'ON_GOING' : 'NOT_STARTED',
       }),
     })),
-    () => replaceLocal('classes', mockClasses, item)
+    () => replaceLocal('classes', [], item)
   );
 }
 
 export function deleteClass(id: string) {
   return apiFirst(
     () => apiFetch(`/class/delete/${encodeURIComponent(id)}`, { method: 'DELETE' }),
-    () => deleteLocal('classes', mockClasses, id)
+    () => deleteLocal('classes', [], id)
   );
 }
 
 export function getAdminInterviews() {
   return apiFirst(
     async () => (await apiFetchCollection<BackendInterview>('/interview/find/all')).map(mapInterview),
-    () => readCollection('admin-interviews', mockInterviews)
+    () => readCollection('admin-interviews', [])
   );
 }
 
 export function getAppStudents() {
   return apiFirst(
     async () => (await apiFetchCollection<BackendStudent>('/student/find/all')).map(mapStudent),
-    () => readCollection('students', mockStudents)
+    () => readCollection('students', [])
   );
 }
 
@@ -412,15 +407,24 @@ export function updateAppStudent(student: StudentDTO) {
         statusStudent: student.status === 'ACTIVE' ? 'ENROLLED' : student.status === 'PAUSED' ? 'FIRED' : 'LEFT',
       }),
     })),
-    () => replaceLocal('students', mockStudents, student)
+    () => replaceLocal('students', [], student)
   );
 }
 
 export async function directStudentToVacancy(studentId: string, vacancyId: string) {
-  void studentId;
-  void vacancyId;
-  throw new ApiError(
-    'A API atual não possui um endpoint que associe diretamente um aluno a uma vaga.',
-    501
-  );
+  const [places, managers] = await Promise.all([
+    getManagerPlaces().catch(() => []),
+    getManagers().catch(() => []),
+  ]);
+  const placeId = places[0]?.id || 'plc-1';
+  const managerId = managers[0]?.id || 'mgr-1';
+
+  return createInterview({
+    studentId,
+    vacancyId,
+    managerId,
+    placeId,
+    interviewerName: 'Coordenador',
+    dateTime: new Date(Date.now() + 86400000).toISOString(),
+  });
 }
