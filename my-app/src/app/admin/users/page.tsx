@@ -37,6 +37,7 @@ import {
   updateManager,
 } from "@/lib/manager-api";
 import { deleteAppUser, getAppUsers, updateAppUser } from '@/lib/application-api';
+import { USER_ID_COOKIE_NAME, USER_NAME_COOKIE_NAME } from "@/lib/auth";
 import type { UserDTO } from "@/types";
 import { UserPlus, Edit, Trash2 } from "lucide-react";
 
@@ -80,6 +81,18 @@ function coordinatorToUser(coordinator: Coordinator): UserDTO {
   };
 }
 
+function currentUserId() {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${USER_ID_COOKIE_NAME}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
+function currentUserName() {
+  if (typeof document === 'undefined') return undefined;
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${USER_NAME_COOKIE_NAME}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
+
 export default function UsuariosPage() {
   const [users, setUsers] = useState<UserDTO[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -99,8 +112,19 @@ export default function UsuariosPage() {
     Promise.all([getManagers(), getCoordinators(), getAppUsers()])
       .then(([managers, coordinators, appUsers]) => {
         if (!active) return;
+        const loggedId = currentUserId();
+        const loggedName = currentUserName();
+
+        // Oculta o administrador atualmente logado (e administradores da lista)
+        const visibleAdmins = appUsers.filter(
+          (user) =>
+            user.role === "ADMIN" &&
+            user.id !== loggedId &&
+            (!loggedName || user.name.toLowerCase() !== loggedName.toLowerCase())
+        );
+
         setUsers([
-          ...appUsers.filter((user) => user.role === "ADMIN"),
+          ...visibleAdmins,
           ...managers.map(managerToUser),
           ...coordinators.map(coordinatorToUser),
         ]);

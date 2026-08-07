@@ -25,7 +25,11 @@ export default function ClassDetailPage({ params }: { params: Promise<{ id: stri
           return;
         }
         setClassItem(found);
-        setStudents(studentData.filter((student) => student.className === found.name));
+        setStudents(studentData.filter((student) =>
+          student.classId === found.id ||
+          student.className === found.code ||
+          student.className === found.name
+        ));
       })
       .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar a turma.'));
   }, [id]);

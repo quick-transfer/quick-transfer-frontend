@@ -5,7 +5,7 @@ import { AppShell } from "@/components/layout";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Search, Ban } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,9 +14,11 @@ import {
   createInterview,
   areaLabels,
   shiftLabels,
+  deleteVacancy,
   getManagers,
   getPlaces,
   getStudents,
+  getInterviewsByVacancy,
   getVacancy,
   getVacancyRequirements,
   updateVacancy,
@@ -31,6 +33,7 @@ interface Candidate {
   id: string;
   name: string;
   classGroup: string;
+  averageGrade?: number;
   matchPercentage?: number;
   email?: string;
   avatarUrl?: string;
@@ -59,6 +62,7 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   );
   const [spots, setSpots] = useState(0);
   const [candidateSearch, setCandidateSearch] = useState("");
+  const [minimumAverage, setMinimumAverage] = useState("0");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [places, setPlaces] = useState<Place[]>([]);
   const [managers, setManagers] = useState<Manager[]>([]);
@@ -96,7 +100,8 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
       getPlaces(),
       getManagers(),
       getVacancyRequirements(resolvedParams.id),
-    ]).then(([vacancy, studentData, placeData, managerData, requirements]) => {
+    ]).then(async ([vacancy, studentData, placeData, managerData, requirements]) => {
+      const vacancyInterviews = await getInterviewsByVacancy(vacancy.name);
       if (!active) return;
       setJobTitle(vacancy.name);
       setDepartment(areaLabels[vacancy.area] ?? vacancy.area);
@@ -122,11 +127,18 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
         (item) => item.park === vacancy.park && item.section === vacancy.section
       );
       setPlaceId(selectedPlace?.id ?? placeData[0]?.id ?? '');
-      setCandidates(studentData.map((student) => ({
+      const directedStudentNames = new Set(
+        vacancyInterviews.map((interview) => interview.nameStudent.trim().toLocaleLowerCase('pt-BR'))
+      );
+      const directedStudents = studentData.filter((student) =>
+        directedStudentNames.has(student.name.trim().toLocaleLowerCase('pt-BR'))
+      );
+      setCandidates(directedStudents.map((student) => ({
         id: student.id,
         name: student.name,
         email: student.email,
         classGroup: student.course,
+        averageGrade: student.averageGrade,
         matchPercentage: student.averageGrade == null
           ? undefined
           : Math.round(student.averageGrade * 10),
@@ -148,12 +160,19 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   }, [resolvedParams.id]);
 
   const handleOpenInterviewModal = (candidate?: Candidate) => {
+    if (candidate && (assignedStudentIds.includes(candidate.id) || otherAssignedIds.includes(candidate.id))) {
+      setError('Este aluno já está alocado em uma vaga e não pode receber uma nova entrevista.');
+      return;
+    }
     if (candidate) setSelectedCandidate(candidate);
     setIsModalOpen(true);
   };
 
   const handleConfirmInterview = async (data: { date: string; time: string; vacancyId: string }) => {
     if (!selectedCandidate) throw new Error('Selecione um candidato.');
+    if (assignedStudentIds.includes(selectedCandidate.id) || otherAssignedIds.includes(selectedCandidate.id)) {
+      throw new Error('Este aluno já está alocado em uma vaga e não pode receber uma nova entrevista.');
+    }
     if (!managers[0]) throw new Error('Não foi possível identificar o gestor autenticado.');
     await createInterview({
       interviewerName: managers[0].name,
@@ -269,8 +288,21 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
   const filteredCandidates = candidates.filter(
     (c) =>
       c.name.toLowerCase().includes(candidateSearch.toLowerCase()) &&
+      (minimumAverage === "0" || (c.averageGrade != null && c.averageGrade >= Number(minimumAverage))) &&
       !otherAssignedIds.includes(c.id)
   );
+
+  const handleDeleteVacancy = async () => {
+    if (!confirm(`Tem certeza que deseja excluir a vaga "${jobTitle}"?`)) return;
+    try {
+      await deleteVacancy(resolvedParams.id);
+    } catch {}
+    try {
+      localStorage.removeItem(`vacancy_assigned_${resolvedParams.id}`);
+      localStorage.removeItem(`vacancy_recommended_${resolvedParams.id}`);
+    } catch {}
+    router.push("/manager/vacancies");
+  };
 
   return (
     <AppShell
@@ -307,6 +339,15 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
           </div>
 
           <div className="flex items-center gap-3">
+            {isEditing && (
+              <button
+                type="button"
+                onClick={handleDeleteVacancy}
+                className="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 border border-red-200 hover:bg-red-50 rounded-lg transition"
+              >
+                Excluir Vaga
+              </button>
+            )}
             {isViewMode ? (
               <button
                 type="button"
@@ -579,15 +620,30 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
               </span>
             </div>
 
-            <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-              <Input
-                type="text"
-                placeholder="Buscar candidatos..."
-                value={candidateSearch}
-                onChange={(e) => setCandidateSearch(e.target.value)}
-                className="pl-10 h-10 bg-white border-slate-200 rounded-full text-sm"
-              />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar candidatos..."
+                  value={candidateSearch}
+                  onChange={(e) => setCandidateSearch(e.target.value)}
+                  className="pl-10 h-10 bg-white border-slate-200 rounded-full text-sm"
+                />
+              </div>
+              <select
+                value={minimumAverage}
+                onChange={(e) => setMinimumAverage(e.target.value)}
+                aria-label="Filtrar por média mínima"
+                className="h-10 rounded-full border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-primary-500"
+              >
+                <option value="0">Todas as médias</option>
+                <option value="5">Média mínima: 5,0</option>
+                <option value="6">Média mínima: 6,0</option>
+                <option value="7">Média mínima: 7,0</option>
+                <option value="8">Média mínima: 8,0</option>
+                <option value="9">Média mínima: 9,0</option>
+              </select>
             </div>
 
             <div className="space-y-3 max-h-[550px] overflow-y-auto pr-1">
@@ -618,7 +674,6 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                         className="flex items-center gap-3 hover:opacity-80 transition"
                       >
                         <Avatar className="size-10 border border-slate-200">
-                          <AvatarImage src={`https://i.pravatar.cc/150?u=${candidate.name}-${idx}`} />
                           <AvatarFallback className="bg-primary-700 text-white text-xs font-bold">
                             {candidate.name.substring(0, 2).toUpperCase()}
                           </AvatarFallback>
@@ -666,13 +721,15 @@ export default function ManagerVacancyDetailPage({ params }: PageProps) {
                             >
                               {isAssigned ? "Remover" : "Colocar na Vaga"}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenInterviewModal(candidate)}
-                              className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-900 text-white hover:bg-primary-950 transition"
-                            >
-                              Entrevista
-                            </button>
+                            {!isAssigned && (
+                              <button
+                                type="button"
+                                onClick={() => handleOpenInterviewModal(candidate)}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-md bg-primary-900 text-white hover:bg-primary-950 transition"
+                              >
+                                Entrevista
+                              </button>
+                            )}
                           </>
                         )}
                         <button

@@ -118,7 +118,7 @@ export default function DashboardPage() {
           <div className="space-y-4 rounded-xl bg-card p-6 shadow-primary-900 shadow-sm lg:col-span-2">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-[20px] font-semibold text-foreground">Vagas Criadas</h2>
+                <h2 className="text-[20px] font-semibold text-foreground">Vagas</h2>
                 <p className="text-sm text-muted-foreground">Visão geral das vagas abertas nas unidades fabris</p>
               </div>
               <Link
@@ -141,7 +141,7 @@ export default function DashboardPage() {
           {/* Stats Grid */}
           <div className="flex flex-col gap-4">
             <StatCard
-              label="Total de Vagas Criadas"
+              label="Total de Vagas"
               value={totalVacancies}
               icon={Briefcase}
             />

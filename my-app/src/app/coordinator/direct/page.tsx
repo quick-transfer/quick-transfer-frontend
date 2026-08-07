@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import type { StudentDTO, VacancyDTO } from "@/types";
 import { Users, Briefcase, Search, ChevronRight, CheckCircle2, ArrowLeft } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { directStudentToVacancy, getAppStudents } from '@/lib/application-api';
 import { getVacancies } from '@/lib/manager-api';
 
@@ -110,10 +110,9 @@ export default function CoordinatorDirectPage() {
     if (!pendingStudent || !selectedVacancy) return;
     setSaving(true);
     setError('');
+    
     try {
       await directStudentToVacancy(pendingStudent.id, selectedVacancy.id);
-    } catch {
-      // Salva como indicação/recomendação para a vaga do gestor (não como alocação definitiva)
       try {
         const key = `vacancy_recommended_${selectedVacancy.id}`;
         const current = JSON.parse(localStorage.getItem(key) || '[]');
@@ -121,13 +120,15 @@ export default function CoordinatorDirectPage() {
           localStorage.setItem(key, JSON.stringify([...current, pendingStudent.id]));
         }
       } catch {}
-    } finally {
       setDirectedStudentId(pendingStudent.id);
       setIsConfirmOpen(false);
       setSuccessMsg(
         `${pendingStudent.name} foi direcionado(a) para a vaga "${selectedVacancy.title}" com sucesso.`
       );
       setTimeout(() => setSuccessMsg(""), 6000);
+    } catch (directionError) {
+      setError(directionError instanceof Error ? directionError.message : 'Não foi possível direcionar o aluno para a vaga.');
+    } finally {
       setSaving(false);
     }
   };
@@ -233,7 +234,7 @@ export default function CoordinatorDirectPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 text-primary-700 hover:text-primary-900"
+                className="gap-1 text-primary-700 hover:bg-primary-900 hover:text-white"
                 onClick={() => { setStep("select-vacancy"); setDirectedStudentId(null); }}
               >
                 <ArrowLeft className="size-3.5" /> Trocar vaga
@@ -253,7 +254,12 @@ export default function CoordinatorDirectPage() {
             <div className="space-y-3">
               {filteredStudents.map((student) => {
                 const initials = student.name.split(" ").map((n) => n[0]).slice(0, 2).join("");
-                const isDirected = directedStudentId === student.id;
+                let isRecommended = false;
+                try {
+                  const saved = localStorage.getItem(`vacancy_recommended_${selectedVacancy.id}`);
+                  if (saved) isRecommended = JSON.parse(saved).includes(student.id);
+                } catch {}
+                const isDirected = directedStudentId === student.id || isRecommended;
 
                 return (
                   <div
@@ -262,7 +268,6 @@ export default function CoordinatorDirectPage() {
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="size-10">
-                        <AvatarImage src={student.avatarUrl} />
                         <AvatarFallback className="bg-primary-600 text-white text-xs font-bold">{initials}</AvatarFallback>
                       </Avatar>
                       <div>

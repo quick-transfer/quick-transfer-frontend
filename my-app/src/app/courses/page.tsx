@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,17 +13,16 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { CourseDTO, StudentDTO } from "@/types";
-import { BookOpen, Users, Eye, ArrowUpRight, Plus } from "lucide-react";
+import { BookOpen, Users, Eye, ArrowUpRight, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
-import { createCourse, getAppStudents, getCourses } from '@/lib/application-api';
+import { createCourse, deleteCourse, getAppStudents, getCourses } from '@/lib/application-api';
 
 export default function CoordinatorCoursesPage() {
-  const [filterTab, setFilterTab] = useState<string>("ALL");
   const [selectedCourse, setSelectedCourse] = useState<CourseDTO | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<CourseDTO | null>(null);
   const [isStudentsOpen, setIsStudentsOpen] = useState(false);
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [formName, setFormName] = useState("");
@@ -33,6 +31,7 @@ export default function CoordinatorCoursesPage() {
   const [students, setStudents] = useState<StudentDTO[]>([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Promise.all([getCourses(), getAppStudents()]).then(([courseData, studentData]) => {
@@ -42,12 +41,6 @@ export default function CoordinatorCoursesPage() {
       setError(loadError instanceof Error ? loadError.message : 'Não foi possível carregar os cursos.');
     });
   }, []);
-
-  const filteredCourses = courses.filter((c) => {
-    if (filterTab === "ACTIVE") return c.status === "ACTIVE";
-    if (filterTab === "COMPLETED") return c.status === "COMPLETED";
-    return true;
-  });
 
   const courseStudents = (course: CourseDTO): StudentDTO[] =>
     students.filter((s) => s.courseName === course.name);
@@ -82,6 +75,23 @@ export default function CoordinatorCoursesPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!courseToDelete) return;
+    setDeleting(true);
+    setError("");
+    try {
+      await deleteCourse(courseToDelete.id);
+      setCourses((prev) => prev.filter((course) => course.id !== courseToDelete.id));
+      setCourseToDelete(null);
+      setSuccessMsg("Curso removido com sucesso!");
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Não foi possível remover o curso.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const columns: DataTableColumn<CourseDTO>[] = [
     {
       key: "name",
@@ -111,15 +121,6 @@ export default function CoordinatorCoursesPage() {
       ),
     },
     {
-      key: "status",
-      header: "Status",
-      render: (course) => {
-        if (course.status === "ACTIVE") return <Badge variant="success">Em Andamento</Badge>;
-        if (course.status === "COMPLETED") return <Badge variant="neutral">Concluído</Badge>;
-        return <Badge variant="warning">Planejado</Badge>;
-      },
-    },
-    {
       key: "actions",
       header: "Ações",
       className: "text-right",
@@ -139,6 +140,14 @@ export default function CoordinatorCoursesPage() {
           >
             Turmas <ArrowUpRight className="size-3.5" />
           </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={() => setCourseToDelete(course)}
+          >
+            <Trash2 className="size-3.5" /> Remover
+          </Button>
         </div>
       ),
     },
@@ -168,17 +177,9 @@ export default function CoordinatorCoursesPage() {
         {error && (
           <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
         )}
-        <Tabs value={filterTab} onValueChange={setFilterTab} className="w-full">
-          <TabsList className="bg-white p-1">
-            <TabsTrigger value="ALL">Todos os Cursos</TabsTrigger>
-            <TabsTrigger value="ACTIVE">Em Andamento</TabsTrigger>
-            <TabsTrigger value="COMPLETED">Concluídos</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         <DataTable
           columns={columns}
-          data={filteredCourses}
+          data={courses}
           pageSize={10}
           searchable
           searchPlaceholder="Buscar curso por nome ou código..."
@@ -222,6 +223,23 @@ export default function CoordinatorCoursesPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsStudentsOpen(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(courseToDelete)} onOpenChange={(open) => !open && setCourseToDelete(null)}>
+        <DialogContent className="sm:max-w-md bg-white border border-slate-200">
+          <DialogHeader>
+            <DialogTitle>Remover curso?</DialogTitle>
+            <DialogDescription>
+              O curso “{courseToDelete?.name}” será removido do sistema. Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCourseToDelete(null)} disabled={deleting}>Cancelar</Button>
+            <Button onClick={handleDelete} disabled={deleting} className="bg-red-600 text-white hover:bg-red-700">
+              {deleting ? "Removendo..." : "Remover curso"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

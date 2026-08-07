@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -27,7 +27,6 @@ interface TopbarProps {
 export function Topbar({
   breadcrumbs = [],
   userName = "Usuário",
-  userAvatar,
 }: TopbarProps) {
   // Take at most 2 initials — avoids displaying 3+ characters for long names.
   const initials = userName
@@ -48,14 +47,11 @@ export function Topbar({
             </BreadcrumbLink>
           </BreadcrumbItem>
           {breadcrumbs.map((segment, index) => (
-            // Fragment keyed by label rather than index so React doesn't
-            // destroy/recreate DOM nodes when breadcrumbs change between pages.
             <Fragment key={segment.label}>
               <BreadcrumbSeparator>
                 <ChevronRight className="size-3.5" />
               </BreadcrumbSeparator>
               <BreadcrumbItem>
-                {/* Last segment or segments without href render as static text. */}
                 {index === breadcrumbs.length - 1 || !segment.href ? (
                   <BreadcrumbPage className="text-sm font-medium">
                     {segment.label}
@@ -76,7 +72,6 @@ export function Topbar({
       <div className="flex items-center gap-3">
         <span className="hidden text-sm font-medium text-slate-700 sm:inline">{userName}</span>
         <Avatar className="size-9 border border-slate-200">
-          <AvatarImage src={userAvatar} alt={userName} />
           <AvatarFallback className="bg-primary-800 text-xs font-bold text-white">{initials}</AvatarFallback>
         </Avatar>
       </div>

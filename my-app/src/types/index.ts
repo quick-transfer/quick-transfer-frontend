@@ -91,6 +91,8 @@ export interface StudentDTO {
   name: string;
   registration: string;
   email: string;
+  age?: number;
+  classId?: string;
   courseName: string;
   className: string;
   status: "ACTIVE" | "COMPLETED" | "PAUSED";

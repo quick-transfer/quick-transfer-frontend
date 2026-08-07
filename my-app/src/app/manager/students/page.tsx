@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AppShell, PageHeader } from "@/components/layout";
 import { DataTable, type DataTableColumn } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import type { StudentDTO } from "@/types";
 import Link from "next/link";
@@ -45,7 +45,6 @@ export default function ManagerStudentsPage() {
         return (
           <div className="flex items-center gap-3">
             <Avatar className="size-9 border border-slate-200">
-              <AvatarImage src={`https://i.pravatar.cc/150?u=${student.name}`} alt={student.name} />
               <AvatarFallback className="bg-primary-800 text-white font-bold text-xs">
                 {initials}
               </AvatarFallback>

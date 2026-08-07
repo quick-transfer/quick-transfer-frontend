@@ -493,6 +493,18 @@ export function getInterviews() {
   );
 }
 
+export function getInterviewsByVacancy(vacancyName: string) {
+  const query = new URLSearchParams({
+    vacancyName,
+    size: '1000',
+  });
+
+  return apiFirst(
+    () => apiFetchCollection<Interview>(`/interview/search?${query.toString()}`),
+    () => readCollection('manager-interviews', interviewSeed)
+  );
+}
+
 export function createInterview(input: InterviewInput) {
   return apiFirst(
     () => apiFetch<Interview>('/interview/create', { method: 'POST', body: JSON.stringify(input) }),

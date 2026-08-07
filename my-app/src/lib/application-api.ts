@@ -67,6 +67,7 @@ interface BackendStudent {
   id: string;
   name: string;
   email: string;
+  age?: number;
   averageGrade?: number;
   acronym?: string;
   course?: string;
@@ -118,7 +119,7 @@ function mapInterview(item: BackendInterview): InterviewDTO {
   };
 }
 
-function mapStudent(item: BackendStudent): StudentDTO {
+function mapStudent(item: BackendStudent, classId?: string): StudentDTO {
   const status: StudentDTO['status'] = item.statusStudent === 'ENROLLED'
     ? 'ACTIVE'
     : item.statusStudent === 'FIRED' ? 'PAUSED' : 'COMPLETED';
@@ -127,6 +128,8 @@ function mapStudent(item: BackendStudent): StudentDTO {
     name: item.name,
     registration: item.id.slice(0, 8).toUpperCase(),
     email: item.email,
+    age: item.age,
+    classId,
     courseName: item.course ?? '',
     className: item.acronym ?? '',
     status,
@@ -220,7 +223,16 @@ export function deleteAppUser(id: string) {
 
 export function getCourses() {
   return apiFirst(
-    async () => (await apiFetchCollection<BackendCourse>('/course/find/all')).map(mapCourse),
+    async () => {
+      const [courses, students] = await Promise.all([
+        apiFetchCollection<BackendCourse>('/course/find/all'),
+        apiFetchCollection<BackendStudent>('/student/find/all'),
+      ]);
+      return courses.map((course) => ({
+        ...mapCourse(course),
+        totalStudents: students.filter((student) => student.course === course.courseName).length,
+      }));
+    },
     () => readCollection('courses', [])
   );
 }
@@ -296,7 +308,16 @@ export function deleteCourse(id: string) {
 
 export function getClasses() {
   return apiFirst(
-    async () => (await apiFetchCollection<BackendClass>('/class/find/all')).map(mapClass),
+    async () => {
+      const [classes, students] = await Promise.all([
+        apiFetchCollection<BackendClass>('/class/find/all'),
+        apiFetchCollection<BackendStudent>('/student/find/all'),
+      ]);
+      return classes.map((item) => ({
+        ...mapClass(item),
+        totalStudents: students.filter((student) => student.acronym === item.acronym).length,
+      }));
+    },
     () => readCollection('classes', [])
   );
 }
@@ -373,7 +394,16 @@ export function getAdminInterviews() {
 
 export function getAppStudents() {
   return apiFirst(
-    async () => (await apiFetchCollection<BackendStudent>('/student/find/all')).map(mapStudent),
+    async () => {
+      const [students, classes] = await Promise.all([
+        apiFetchCollection<BackendStudent>('/student/find/all'),
+        apiFetchCollection<BackendClass>('/class/find/all'),
+      ]);
+      return students.map((student) => mapStudent(
+        student,
+        classes.find((classItem) => classItem.acronym === student.acronym)?.id,
+      ));
+    },
     () => readCollection('students', [])
   );
 }
@@ -393,37 +423,54 @@ export function createAppStudent(input: CreateStudentInput) {
       statusStudentInterview: 'NOT_ASSOCIATED',
       hasSeenEmail: false,
     }),
-  }).then(mapStudent);
+  }).then((student) => mapStudent(student, input.classId));
 }
 
-export function updateAppStudent(student: StudentDTO) {
+export function updateAppStudent(
+  student: StudentDTO,
+  options: { removeFromClass?: boolean } = {},
+) {
   return apiFirst(
-    async () => mapStudent(await apiFetch<BackendStudent>(`/student/update/${encodeURIComponent(student.id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        name: student.name,
-        email: student.email,
-        averageGrade: student.performanceGrade,
-        statusStudent: student.status === 'ACTIVE' ? 'ENROLLED' : student.status === 'PAUSED' ? 'FIRED' : 'LEFT',
+    async () => mapStudent(
+      await apiFetch<BackendStudent>(`/student/update/${encodeURIComponent(student.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name: student.name,
+          email: student.email,
+          age: student.age,
+          averageGrade: student.performanceGrade,
+          classId: student.classId,
+          removeFromClass: options.removeFromClass,
+          statusStudent: student.status === 'ACTIVE' ? 'ENROLLED' : student.status === 'PAUSED' ? 'FIRED' : 'LEFT',
+        }),
       }),
-    })),
+      student.classId,
+    ),
     () => replaceLocal('students', [], student)
   );
 }
 
 export async function directStudentToVacancy(studentId: string, vacancyId: string) {
-  const [places, managers] = await Promise.all([
-    getManagerPlaces().catch(() => []),
-    getManagers().catch(() => []),
+  const [vacancy, places, managers] = await Promise.all([
+    getManagerVacancy(vacancyId),
+    getManagerPlaces(),
+    getManagers(),
   ]);
-  const placeId = places[0]?.id || 'plc-1';
-  const managerId = managers[0]?.id || 'mgr-1';
+  const place = places.find((item) => item.park === vacancy.park && item.section === vacancy.section);
+  const manager = managers.find((item) => item.section === vacancy.section);
+
+  if (!place) {
+    throw new Error('Não foi possível identificar a unidade vinculada à vaga.');
+  }
+  if (!manager) {
+    throw new Error('Não foi possível identificar um gestor responsável pela vaga.');
+  }
 
   return createInterview({
     studentId,
     vacancyId,
-    managerId,
-    placeId,
+    managerId: manager.id,
+    placeId: place.id,
     interviewerName: 'Coordenador',
     dateTime: new Date(Date.now() + 86400000).toISOString(),
   });

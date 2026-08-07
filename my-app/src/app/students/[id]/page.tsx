@@ -92,7 +92,10 @@ export default function StudentDetailsPage({ params }: PageProps) {
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground"><Mail className="size-4 text-primary" />{student.email}</div>
-            <div className="flex items-center gap-2 text-muted-foreground"><Award className="size-4 text-primary" />{student.courseName} · {student.className}</div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Award className="size-4 text-primary" />
+              {student.className ? `${student.courseName} · ${student.className}` : 'Sem turma vinculada'}
+            </div>
             <div className="border-t pt-4">
               <div className="mb-1 flex justify-between text-xs font-medium">
                 <span>Média de desempenho</span>

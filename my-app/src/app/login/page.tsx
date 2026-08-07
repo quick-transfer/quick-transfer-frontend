@@ -3,7 +3,6 @@
 import "@/app/globals.css";
 import { FormEvent, useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { apiFetch, ApiError } from "@/lib/api";
 import {
@@ -71,8 +70,6 @@ function isAuthenticatedUser(value: unknown): value is AuthenticatedUser {
 }
 
 export default function Login() {
-  const router = useRouter();
-
   const [usuario, setUsuario] = useState("");
   const [senha, setSenha] = useState("");
   const [novaSenha, setNovaSenha] = useState("");
@@ -99,10 +96,13 @@ export default function Login() {
       document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(mockSessionToken)}; path=/; max-age=28800; samesite=strict${secure}`;
     }
 
-    // router.replace keeps the login page out of browser history so the back
-    // button doesn't return users to the login form after signing in.
-    router.replace(getRedirectPathByRole(authenticatedUser.role));
-    router.refresh();
+    // Authentication crosses a cookie boundary: the backend has just issued
+    // the HttpOnly JWT and the client has written the role cookies above. A
+    // full navigation ensures those cookies are committed before the Next.js
+    // proxy validates the destination. Triggering router.replace followed by
+    // router.refresh caused a race on slower/tunneled connections where the
+    // refresh of /login could win and leave the user on the login screen.
+    window.location.replace(getRedirectPathByRole(authenticatedUser.role));
   };
 
   const authenticate = async (username: string, password: string) => {
